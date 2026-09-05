@@ -14,7 +14,7 @@ public static class BoardReview
     static int step;
     static int retries;
     static readonly int[,] sizes = { {1280,720}, {1920,1080}, {2340,1080}, {1024,768} };
-    static string Folder => Path.GetFullPath("work/board-review");
+    static string Folder => Path.GetFullPath("work/3d-review");
     static BoardReview() { EditorApplication.update += Tick; }
     [MenuItem("Cashflow/Review Board")]
     public static void Run()
@@ -62,8 +62,8 @@ public static class BoardReview
                         Vector2 right=BoardTrackGenerator.Point(((segment.index+1)-.5f)/segment.count,segment.radius);
                         if(Vector2.Distance(left,right)>.001f)throw new Exception("Track seam mismatch");
                         Vector2 midpoint=BoardTrackGenerator.Point(segment.index/(float)segment.count,segment.radius);
-                        Vector2 screen=RectTransformUtility.WorldToScreenPoint(null,segment.transform.TransformPoint(midpoint));
-                        if(!segment.IsRaycastLocationValid(screen,null))throw new Exception("Tile center is not clickable");
+                        Vector2 screen=RectTransformUtility.WorldToScreenPoint(Camera.main,segment.transform.TransformPoint(midpoint));
+                        if(!segment.IsRaycastLocationValid(screen,Camera.main))throw new Exception("Tile center is not clickable");
                     }
                     var root=UnityEngine.Object.FindObjectOfType<SafeBoardLayout>().GetComponent<RectTransform>();
                     var corners=new Vector3[4]; root.GetWorldCorners(corners);
@@ -73,18 +73,27 @@ public static class BoardReview
                     File.AppendAllText(Path.Combine(Folder,"results.txt"),"PASS: "+Screen.width+"x"+Screen.height+"; 48 segments, shared seams, tile hit targets, HUD bounds.\n");
                 }
             }
+            else if(step==9)
+            {
+                SetSize(1920,1080);UnityEngine.Object.FindObjectOfType<BoardWorld>().SetOverview(false);
+            }
+            else if(step==10)
+            {
+                ScreenCapture.CaptureScreenshot(Path.Combine(Folder,"follow-camera.png"));
+                var game=UnityEngine.Object.FindObjectOfType<CashflowGame>();
+                typeof(CashflowGame).GetMethod("Roll",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(game,null);
+            }
             else
             {
-                var game=UnityEngine.Object.FindObjectOfType<CashflowGame>();
-                var flags=BindingFlags.Instance|BindingFlags.NonPublic;
-                typeof(CashflowGame).GetMethod("Roll",flags).Invoke(game,null);
+                var game=UnityEngine.Object.FindObjectOfType<CashflowGame>();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                if((bool)typeof(CashflowGame).GetField("rolling",flags).GetValue(game)){if(++retries>12)throw new Exception("Roll did not finish");next=EditorApplication.timeSinceStartup+2;return;}
                 int position=(int)typeof(CashflowGame).GetField("position",flags).GetValue(game);
-                var token=(GameObject)typeof(CashflowGame).GetField("token",flags).GetValue(game);
-                if(Vector2.Distance(token.GetComponent<RectTransform>().anchoredPosition,BoardTrackGenerator.Point(position/24f,222)+new Vector2(0,22))>.01f)throw new Exception("Token does not match landed space");
-                File.AppendAllText(Path.Combine(Folder,"results.txt"),"PASS: Roll resolves and token matches the landed space.\n");
-                SessionState.SetBool("BoardReview",false);
-                Debug.Log("Board review complete: "+Folder);
-                return;
+                var world=UnityEngine.Object.FindObjectOfType<BoardWorld>();
+                if(world.DiceTotal<1||world.DiceTotal>6)throw new Exception("Single-die result invalid");
+                if(Vector3.Distance(world.Pawn.position,BoardWorld.TrackPoint(position,false))>.01f)throw new Exception("3D pawn does not match landed space");
+                File.AppendAllText(Path.Combine(Folder,"results.txt"),"PASS: physical dice result, animated pawn landing, follow camera and live minimap.\n");
+                ScreenCapture.CaptureScreenshot(Path.Combine(Folder,"landed-event.png"));
+                SessionState.SetBool("BoardReview",false);Debug.Log("3D board review complete: "+Folder);return;
             }
             SessionState.SetInt("BoardReviewStep",step+1);
             next=EditorApplication.timeSinceStartup+3;
