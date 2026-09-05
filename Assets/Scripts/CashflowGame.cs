@@ -28,7 +28,7 @@ public partial class CashflowGame : MonoBehaviour
     readonly Deal[] smallDeals = { new Deal("2/1 Condo", 4000, 220), new Deal("3/2 House", 5000, 250), new Deal("Vending Route", 4000, 350), new Deal("Micro SaaS", 3000, 400) };
     readonly Deal[] bigDeals = { new Deal("4-Plex", 10000, 800), new Deal("Pizza Franchise", 35000, 3000) };
 
-    Profession profession; string dream; int selectedDream; int cash, passive, children, position, fastPosition, fastFlow; bool fastTrack, charity; int skipTurns;
+    Profession profession; string dream; int selectedDream; int cash, passive, children, position, fastPosition, fastFlow; bool fastTrack, charity; int skipTurns; int bankLoan;
     BoardWorld world; Button rollButton; bool rolling; GameObject modal;
     RectTransform uiRoot; Text bottomCash, freedomText, diceResult; Image freedomFill;
     Canvas canvas; Text header, statement, log, cashReadout, flowReadout, modeReadout, hoverCopy; RectTransform board; GameObject hoverPanel; Sprite circleSprite, roundedSprite; Font uiFont; readonly Dictionary<string, Sprite> artSprites = new Dictionary<string, Sprite>(); readonly List<Button> tileButtons = new List<Button>(); readonly List<GameObject> boardDecorations = new List<GameObject>();
@@ -199,7 +199,7 @@ public partial class CashflowGame : MonoBehaviour
         var cashflow=Label(confirmation.transform,(flow>=0?"+":"")+Money(flow)+"/mo",17,TextAnchor.MiddleRight); cashflow.color=C("#00e2a4"); cashflow.fontStyle=FontStyle.Bold; Place(cashflow.rectTransform,420,39,675,28);
         var start=Button(confirmation.transform,"⊙  START CASHFLOW GAME",C("#079d70"),()=>{PlayerPrefs.SetInt("CashflowDream",selectedDream);PlayerPrefs.Save();SceneManager.LoadScene("GameBoard");}); Place(start.GetComponent<RectTransform>(),0,-25,1095,66); SetButtonText(start,Color.white,23);
     }
-    void StartGame(){ if(profession==null)LoadProfessionSelection(); selectedDream=Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream",0),0,dreams.Length-1); dream=dreams[selectedDream]; cash=profession.savings; passive=0;children=0;position=0;fastPosition=0;fastFlow=0;fastTrack=false;charity=false;skipTurns=0;BuildGame(); Log("Welcome, "+profession.name+". Roll the dice to begin."); }
+    void StartGame(){ if(profession==null)LoadProfessionSelection(); selectedDream=Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream",0),0,dreams.Length-1); dream=dreams[selectedDream]; cash=profession.savings; passive=0;children=0;position=0;fastPosition=0;fastFlow=0;fastTrack=false;charity=false;skipTurns=0;bankLoan=0;BuildGame(); Log("Welcome, "+profession.name+". Roll the dice to begin."); }
     void BuildGame()
     {
         if(world!=null){world.gameObject.SetActive(false);Destroy(world.gameObject);}
@@ -208,7 +208,8 @@ public partial class CashflowGame : MonoBehaviour
         uiRoot.Find("Background").GetComponent<Image>().color=Color.clear;
         var top=Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(360,44),C("#49375f"));Place(top.GetComponent<RectTransform>(),-433,325,360,44);top.GetComponent<Image>().sprite=RoundedSprite();top.GetComponent<Image>().type=Image.Type.Sliced;
         header=Label(top.transform,"",16);Stretch(header.rectTransform);
-        var statementButton=Button(uiRoot,"FINANCES",C("#49375f"),ShowStatement);Place(statementButton.GetComponent<RectTransform>(),-185,325,116,44);statementButton.GetComponent<Image>().sprite=RoundedSprite();SetButtonText(statementButton,Color.white,12);
+        var statementButton=Button(uiRoot,"$  FINANCES",C("#fff0cb"),ShowStatement);statementButton.gameObject.name="Finances Button";Place(statementButton.GetComponent<RectTransform>(),-160,325,160,44);statementButton.GetComponent<Image>().sprite=RoundedSprite();SetButtonText(statementButton,C("#594125"),14);
+        var financeTrim=statementButton.gameObject.AddComponent<Outline>();financeTrim.effectColor=C("#d6ae5e");financeTrim.effectDistance=new Vector2(2,2);
         // The board occupies the complete game area below the persistent header.
         board=new GameObject("Game Board",typeof(RectTransform),typeof(Image)).GetComponent<RectTransform>(); board.SetParent(uiRoot,false); board.GetComponent<Image>().color=new Color(1,1,1,0); board.GetComponent<Image>().raycastTarget=false; Place(board,0,8,1280,540);
         world=new GameObject("Cashflow 3D World").AddComponent<BoardWorld>();
@@ -341,7 +342,7 @@ public partial class CashflowGame : MonoBehaviour
         if(title.Contains("PAYDAY")||title.Contains("CASHFLOW")) return "collect your monthly cashflow.";
         if(title.Contains("OPPORTUNITY")) return "draw an investment deal.";
         if(title.Contains("DOODAD")) return "pay an unexpected expense.";
-        if(title.Contains("CHARITY")) return "donate to unlock a two-dice roll.";
+        if(title.Contains("CHARITY")) return "choose to donate for two dice next roll, or pass and keep one die.";
         if(title.Contains("MARKET")) return "receive a market offer or stock split.";
         if(title.Contains("BABY")) return "add a new monthly expense.";
         if(title.Contains("DOWNSIZED")) return "pay expenses and lose two turns.";
@@ -389,7 +390,7 @@ public partial class CashflowGame : MonoBehaviour
         if(tile=="PAYDAY"){ Payday(); ShowEventPanel("PAYDAY","Your monthly cashflow was added to cash.\n\nCollected: "+Money(Income()-Expenses()),C("#a16207")); return; }
         if(tile=="OPPORTUNITY"){ ShowDealChoice(); return; }
         if(tile=="DOODAD"){ int cost=Random.Range(100,1001); cash-=cost; Log("Doodad: paid "+Money(cost)); ShowEventPanel("DOODAD","Unexpected expense paid.\n\nCost: "+Money(cost),C("#b91c1c")); return; }
-        if(tile=="CHARITY"){ int cost=Mathf.Max(100,Income()/10); cash-=cost; charity=true; Log("Charity: paid "+Money(cost)+"; next roll uses two dice."); ShowEventPanel("CHARITY","You donated "+Money(cost)+".\n\nYour next roll uses two dice!",C("#b45309")); return; }
+        if(tile=="CHARITY"){ShowCharityChoice();return;}
         if(tile=="BABY"){ children=Mathf.Min(3,children+1); Log("A new baby joins the family. Expenses increased."); ShowEventPanel("BABY","Your family grew.\n\nMonthly expenses increased by "+Money(profession.childPay)+".",C("#be185d")); return; }
         if(tile=="DOWNSIZED"){ cash-=Expenses(); skipTurns=2; Log("Downsized: paid expenses and lose 2 turns."); ShowEventPanel("DOWNSIZED","You paid one month of expenses and must skip two turns.\n\nCost: "+Money(Expenses()),C("#0369a1")); return; }
         if(tile=="MARKET"){ int gain=Mathf.Max(0,passive*5); cash+=gain; Log("Market day: portfolio value realized."); ShowEventPanel("THE MARKET","A market event produced a portfolio gain.\n\nCash received: "+Money(gain),C("#6b21a8")); return; }
@@ -401,8 +402,8 @@ public partial class CashflowGame : MonoBehaviour
             else{int lost=cash-cash/2;cash=Mathf.Max(0,cash/2);Log("Fast Track hazard reduced cash.");ShowEventPanel("FAST TRACK HAZARD","A setback reduced your available cash.\n\nLost: "+Money(lost),C("#b91c1c"));}
         }
     }
-    int Expenses(){return profession.taxes+profession.mortgagePay+profession.schoolPay+profession.carPay+profession.cardPay+profession.retailPay+profession.other+children*profession.childPay;}
-    int Income(){return (fastTrack?0:profession.salary)+passive;}
+    int Expenses(){return profession.taxes+profession.mortgagePay+profession.schoolPay+profession.carPay+profession.cardPay+profession.retailPay+profession.other+children*profession.childPay+LoanPayment();}
+    int Income(){return (fastTrack?fastFlow:profession.salary)+passive;}
     void Payday(){int amount=Income()-Expenses();cash+=amount;Log("PAYDAY: collected "+Money(amount));}
     void CheckEscape(){if(!fastTrack&&passive>Expenses()){fastTrack=true;cash=passive*100;DrawBoard();Log("You escaped the Rat Race! Welcome to the Fast Track.");}}
     void Refresh()
@@ -418,6 +419,6 @@ public partial class CashflowGame : MonoBehaviour
     }
     void Log(string s){if(log!=null)log.text=s;}
     string Money(int v){return (v<0?"-":"")+"$"+Mathf.Abs(v).ToString("N0");}
-    void ShowStatement(){var popup=Modal(new Vector2(480,370));var tx=Label(popup.transform,"FINANCIAL STATEMENT\n\nSalary: "+Money(fastTrack?0:profession.salary)+"\nPassive income: "+Money(passive)+"\nExpenses: "+Money(Expenses())+"\nMonthly cashflow: "+Money(Income()-Expenses())+"\nFreedom: "+(Expenses()==0?100:Mathf.Min(100,passive*100/Expenses()))+"%",20);Place(tx.rectTransform,0,20,430,280);var close=Button(popup.transform,"CLOSE",C("#475569"),()=>CloseModal());Place(close.GetComponent<RectTransform>(),0,-145,150,38);}
+
     void Win(){var p=Modal(new Vector2(520,260));var t=Label(p.transform,"DREAM ACHIEVED!\n\nYou reached your dream: "+dream+"\n\nCongratulations!",26);Place(t.rectTransform,0,20,470,190);var again=Button(p.transform,"PLAY AGAIN",C("#16a34a"),StartGame);Place(again.GetComponent<RectTransform>(),0,-95,160,42);}
 }

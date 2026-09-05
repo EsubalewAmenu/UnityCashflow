@@ -59,11 +59,12 @@ public partial class CashflowGame
         var balance=Label(card.transform,"Available cash: "+Money(cash),16);balance.color=C("#6a6071");Place(balance.rectTransform,110,-80,400,28);
         bool affordable=cash>=deal.down, resolved=false;
         var status=Label(card.transform,affordable?"Cash after purchase: "+Money(cash-deal.down):"You need "+Money(deal.down-cash)+" more to buy this deal.",16);status.color=C(affordable?"#21756a":"#a84036");Place(status.rectTransform,0,-143,690,32);
-        var buy=Button(card.transform,affordable?"BUY DEAL":"NOT ENOUGH CASH",affordable?accent:C("#807a81"),()=>
+        var buy=Button(card.transform,affordable?"BUY DEAL":"BORROW & BUY...",accent,()=>
         {
-            if(resolved||cash<deal.down)return;resolved=true;
+            if(resolved)return;resolved=true;
+            if(cash<deal.down){ShowLoanOffer(deal,big);return;}
             cash-=deal.down;passive+=deal.flow;CloseModal();Log("Bought "+deal.title+". Passive income +"+Money(deal.flow));CheckEscape();Refresh();PurchaseCelebration(deal);
-        });buy.gameObject.name="Buy Deal";buy.interactable=affordable;Place(buy.GetComponent<RectTransform>(),140,-198,300,54);SetButtonText(buy,Color.white,18);
+        });buy.gameObject.name="Buy Deal";buy.interactable=true;Place(buy.GetComponent<RectTransform>(),140,-198,300,54);SetButtonText(buy,Color.white,18);
         var pass=Button(card.transform,"PASS",C("#e8dcc5"),()=>{if(resolved)return;resolved=true;CloseModal();Log("Passed on "+deal.title);});pass.gameObject.name="Pass Deal";Place(pass.GetComponent<RectTransform>(),-190,-198,230,54);SetButtonText(pass,C("#51445b"),18);
     }
     void PurchaseCelebration(Deal deal)

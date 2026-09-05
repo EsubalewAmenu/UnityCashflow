@@ -1,1 +1,2 @@
 PASS: both deck choices, small purchase, duplicate click guard, big deal pass, insufficient cash, modal cleanup, reduced-motion event reveal.
+PASS: charity accept/pass and affordability; loan confirmation/pass, interest, duplicate guards, repayment, finance close and new-game reset.

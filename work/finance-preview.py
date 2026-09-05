@@ -1,0 +1,2 @@
+from pathlib import Path
+p=Path('Assets/Editor/DealReview.cs');s=p.read_text().replace('                    ScreenCapture.CaptureScreenshot(Folder+"/finances.png");\n','').replace('                case 20:\n                    Click("Close Finances");','                case 20:ScreenCapture.CaptureScreenshot(Folder+"/finances.png");break;\n                case 21:\n                    Click("Close Finances");');p.write_text(s)

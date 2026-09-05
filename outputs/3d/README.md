@@ -31,3 +31,6 @@ Removed the right-side zoom/rotate controls and the minimap camera/render textur
 
 ## Deal cards
 Landing on Deal now offers separate Small Deal and Big Deal decks using the existing investment amounts. Cards show down payment, income, available cash, and affordability; Buy updates balances exactly once and Pass closes the modal correctly. A shared cream-and-gold presentation improves event cards too. Deals flip from an opportunity card back with gold sparkles; purchases show a brief celebration. Reduced Motion uses a short fade. Deal-flow tests passed alongside the five-resolution board regression.
+
+## Optional charity, bank loans, and Finances
+Charity now offers Donate (two dice on the next roll) or Pass (one die); unaffordable donations are disabled. Unaffordable deals offer a reviewed bank loan or Pass. The game bank lends in $1,000 steps, charging $100/month per step as interest; principal can be repaid in $1,000 steps from Finances. Interest is included in expenses, payday and the financial-freedom calculation. Finances now uses the animated cream-and-gold card style with cashflow, debt and repayment controls. Tests cover choice outcomes, confirmation, duplicate-click guards, interest, repayment and resetting debt for a new game, plus the five-resolution board regression.
