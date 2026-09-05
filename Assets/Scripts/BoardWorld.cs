@@ -14,12 +14,13 @@ public sealed class BoardWorld : MonoBehaviour
     public int DiceTotal { get; private set; }
     public bool Follow { get; private set; }
     public bool Busy { get; private set; }
+    public bool Dragged => moved;
     public bool Sound = true;
     public bool ReducedMotion;
     public bool InputBlocked;
     readonly List<Material> materials = new List<Material>();
     readonly List<BoardDie> dice = new List<BoardDie>();
-    Transform scenery; Material print;
+    Transform scenery; Material boardInk;
     Vector3 focus;
     float yaw, pitch = 55, zoom = 1;
     Vector2 pointer;
@@ -36,7 +37,12 @@ public sealed class BoardWorld : MonoBehaviour
     public void Initialize(RectTransform face)
     {
         BoardTrackGenerator.Straight=328;
+        // Clear the entire display, including the HUD area outside the 3D viewport.
+        // A partial camera rect alone leaves old UI pixels behind after resizing.
+        var backdrop=new GameObject("Full display clear").AddComponent<Camera>();backdrop.transform.SetParent(transform,false);
+        backdrop.depth=-100;backdrop.cullingMask=0;backdrop.clearFlags=CameraClearFlags.SolidColor;backdrop.backgroundColor=Hex("#2d2450");
         View=Camera.main;
+        View.depth=0;
         View.orthographic=false; View.fieldOfView=39; View.nearClipPlane=.05f; View.farClipPlane=150;
         View.clearFlags=CameraClearFlags.SolidColor; View.backgroundColor=Hex("#b6d6df"); View.allowMSAA=true;
         QualitySettings.antiAliasing=4;
@@ -121,15 +127,20 @@ public sealed class BoardWorld : MonoBehaviour
             Shape("Tree",PrimitiveType.Sphere,scenery,new Vector3(x+.6f,.4f,z-.6f),new Vector3(.55f,.8f,.55f),green);
         }
     }
-    public void ApplyPrint(Transform board){if(print==null){print=new Material(Shader.Find("Cashflow/Printed Board"));materials.Add(print);}foreach(var g in board.GetComponentsInChildren<Graphic>())g.material=print;}
+    public void ApplyPrint(Transform board){if(boardInk==null){boardInk=new Material(Shader.Find("Cashflow/Printed Board"));materials.Add(boardInk);}foreach(var g in board.GetComponentsInChildren<Graphic>())g.material=g is Text?null:boardInk;}
     public void ToggleScenery(){scenery.gameObject.SetActive(!scenery.gameObject.activeSelf);}
     public void SetOverview(bool overview){Follow=!overview;zoom=1;yaw=overview?0:-18;pitch=overview?57:43;}
     public void Orbit(float degrees){yaw+=degrees;}
     public void Zoom(float amount){zoom=Mathf.Clamp(zoom+amount,.7f,1.7f);}
+    bool OverHUD()
+    {
+        if(EventSystem.current==null)return false;var hits=new List<RaycastResult>();EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current){position=Input.mousePosition},hits);
+        foreach(var hit in hits){var canvas=hit.gameObject.GetComponentInParent<Canvas>();if(canvas!=null&&canvas.renderMode!=RenderMode.WorldSpace)return true;}return false;
+    }
     void Update()
     {
         if(InputBlocked || Busy)return;
-        if(Input.GetMouseButtonDown(0)) { dragging=EventSystem.current==null||!EventSystem.current.IsPointerOverGameObject();pointer=Input.mousePosition;moved=false; }
+        if(Input.GetMouseButtonDown(0)) { dragging=!OverHUD();pointer=Input.mousePosition;moved=false; }
         if(dragging&&Input.GetMouseButton(0))
         {
             Vector2 now=Input.mousePosition;Vector2 d=now-pointer;
@@ -150,10 +161,10 @@ public sealed class BoardWorld : MonoBehaviour
     {
         Rect safe=Screen.safeArea;
         if(safe.width<=0||safe.height<=0||safe.xMax>Screen.width||safe.yMax>Screen.height)safe=new Rect(0,0,Screen.width,Screen.height);
-        View.rect=new Rect(safe.x/Screen.width,safe.y/Screen.height+.14f*safe.height/Screen.height,safe.width/Screen.width,.77f*safe.height/Screen.height);
-        Vector3 target=Follow?Pawn.position+new Vector3(0,0,.35f):Vector3.zero;
+        View.rect=new Rect(safe.x/Screen.width,safe.y/Screen.height+.14f*safe.height/Screen.height,safe.width/Screen.width,.86f*safe.height/Screen.height);
+        Vector3 target=Busy?Vector3.zero:Follow?Pawn.position+new Vector3(0,0,.35f):Vector3.zero;
         focus=instant?target:Vector3.Lerp(focus,target,1-Mathf.Exp(-Time.unscaledDeltaTime*5));
-        float distance=Follow?5.8f:Mathf.Max(9.7f,6.4f/(Mathf.Tan(View.fieldOfView*Mathf.Deg2Rad/2)*View.aspect));
+        float distance=Busy?6.8f:Follow?5.8f:Mathf.Max(9.7f,6.4f/(Mathf.Tan(View.fieldOfView*Mathf.Deg2Rad/2)*View.aspect));
         Vector3 offset=Quaternion.Euler(pitch,yaw,0)*new Vector3(0,0,-distance*zoom);
         Vector3 desired=focus+offset;
         View.transform.position=instant?desired:Vector3.Lerp(View.transform.position,desired,1-Mathf.Exp(-Time.unscaledDeltaTime*6));

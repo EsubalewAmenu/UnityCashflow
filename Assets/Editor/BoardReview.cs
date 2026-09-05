@@ -89,11 +89,31 @@ public static class BoardReview
                 if((bool)typeof(CashflowGame).GetField("rolling",flags).GetValue(game)){if(++retries>12)throw new Exception("Roll did not finish");next=EditorApplication.timeSinceStartup+2;return;}
                 int position=(int)typeof(CashflowGame).GetField("position",flags).GetValue(game);
                 var world=UnityEngine.Object.FindObjectOfType<BoardWorld>();
-                if(world.DiceTotal<1||world.DiceTotal>6)throw new Exception("Single-die result invalid");
+                if(world.DiceTotal<(step==11?1:2)||world.DiceTotal>(step==11?6:12))throw new Exception("Dice result invalid");
+                if(world.Overview.targetTexture==null||!world.Overview.targetTexture.IsCreated())throw new Exception("Live minimap unavailable");
+                int sum=0;foreach(var die in UnityEngine.Object.FindObjectsOfType<BoardDie>())sum+=die.Value;
+                if(sum!=world.DiceTotal)throw new Exception("Visible dice do not match gameplay total");
                 if(Vector3.Distance(world.Pawn.position,BoardWorld.TrackPoint(position,false))>.01f)throw new Exception("3D pawn does not match landed space");
-                File.AppendAllText(Path.Combine(Folder,"results.txt"),"PASS: physical dice result, animated pawn landing, follow camera and live minimap.\n");
-                ScreenCapture.CaptureScreenshot(Path.Combine(Folder,"landed-event.png"));
-                SessionState.SetBool("BoardReview",false);Debug.Log("3D board review complete: "+Folder);return;
+                if(step==11)
+                {
+                    File.AppendAllText(Path.Combine(Folder,"results.txt"),"PASS: single physical die, animated pawn landing, follow camera and live minimap.\n");
+                    typeof(CashflowGame).GetMethod("ShowBoardSettings",flags).Invoke(game,null);
+                    typeof(CashflowGame).GetMethod("Roll",flags).Invoke(game,null);
+                    if((bool)typeof(CashflowGame).GetField("rolling",flags).GetValue(game))throw new Exception("Modal did not block rolling");
+                    typeof(CashflowGame).GetMethod("CloseModal",flags).Invoke(game,null);
+                    typeof(CashflowGame).GetField("charity",flags).SetValue(game,true);
+                    typeof(CashflowGame).GetField("skipTurns",flags).SetValue(game,0);
+                    SessionState.SetInt("ReviewOldPosition",position);
+                    typeof(CashflowGame).GetMethod("Roll",flags).Invoke(game,null);
+                    retries=0;
+                }
+                else
+                {
+                    if(position!=(SessionState.GetInt("ReviewOldPosition",0)+world.DiceTotal)%24)throw new Exception("Two-dice movement incorrect");
+                    File.AppendAllText(Path.Combine(Folder,"results.txt"),"PASS: two physical dice match movement; settings modal blocks extra rolls.\n");
+                    ScreenCapture.CaptureScreenshot(Path.Combine(Folder,"landed-event.png"));
+                    SessionState.SetBool("BoardReview",false);Debug.Log("3D board review complete: "+Folder);return;
+                }
             }
             SessionState.SetInt("BoardReviewStep",step+1);
             next=EditorApplication.timeSinceStartup+3;

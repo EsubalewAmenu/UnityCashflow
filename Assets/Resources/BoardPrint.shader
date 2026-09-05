@@ -1,22 +1,28 @@
 Shader "Cashflow/Printed Board"
 {
-    Properties { _MainTex ("Printed artwork",2D)="white" {} }
-    SubShader
-    {
-        Tags { "Queue"="Transparent" "RenderType"="Transparent" }
-        Cull Off
-        CGPROGRAM
-        #pragma surface surf Standard alpha:fade fullforwardshadows vertex:vert
-        #pragma target 3.0
-        sampler2D _MainTex;
-        struct Input { float2 uv_MainTex; float4 tint; };
-        void vert(inout appdata_full v,out Input o){ UNITY_INITIALIZE_OUTPUT(Input,o);o.tint=v.color; }
-        void surf(Input i,inout SurfaceOutputStandard o)
-        {
-            fixed4 ink=tex2D(_MainTex,i.uv_MainTex)*i.tint;
-            o.Albedo=ink.rgb;o.Alpha=ink.a;o.Smoothness=.12;o.Metallic=0;
-        }
-        ENDCG
-    }
-    Fallback "Diffuse"
+ Properties { _MainTex ("Artwork",2D)="white" {} }
+ SubShader
+ {
+  Tags { "Queue"="Transparent" "RenderType"="Transparent" }
+  Pass
+  {
+   Tags { "LightMode"="ForwardBase" }
+   Blend SrcAlpha OneMinusSrcAlpha
+   Cull Off
+   ZWrite Off
+   CGPROGRAM
+   #pragma vertex vert
+   #pragma fragment frag
+   #pragma multi_compile_fwdbase
+   #include "UnityCG.cginc"
+   #include "AutoLight.cginc"
+   sampler2D _MainTex;
+   struct appdata { float4 vertex:POSITION; float2 uv:TEXCOORD0; fixed4 color:COLOR; };
+   struct v2f { float4 pos:SV_POSITION; float2 uv:TEXCOORD0; fixed4 color:COLOR; SHADOW_COORDS(1) };
+   v2f vert(appdata v) { v2f o; o.pos=UnityObjectToClipPos(v.vertex);o.uv=v.uv;o.color=v.color;TRANSFER_SHADOW(o);return o; }
+   fixed4 frag(v2f i):SV_Target { fixed4 c=tex2D(_MainTex,i.uv)*i.color;c.rgb*=lerp(.65,1,SHADOW_ATTENUATION(i));return c; }
+   ENDCG
+  }
+ }
+ Fallback Off
 }
