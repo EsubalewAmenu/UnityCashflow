@@ -27,9 +27,17 @@ public class CashflowGame : MonoBehaviour
     readonly Deal[] deals = { new Deal("2/1 Condo", 4000, 220), new Deal("3/2 House", 5000, 250), new Deal("Vending Route", 4000, 350), new Deal("Micro SaaS", 3000, 400), new Deal("4-Plex", 10000, 800), new Deal("Pizza Franchise", 35000, 3000) };
 
     Profession profession; string dream; int selectedDream; int cash, passive, children, position, fastPosition, fastFlow; bool fastTrack, charity; int skipTurns;
-    Canvas canvas; Text header, statement, log, cashReadout, flowReadout, modeReadout, hoverCopy; RectTransform board; GameObject token, hoverPanel, cityBackdrop; Sprite circleSprite, roundedSprite; Font uiFont; readonly List<Button> tileButtons = new List<Button>(); readonly List<GameObject> boardDecorations = new List<GameObject>();
+    RectTransform uiRoot; Text bottomCash, freedomText, diceResult; Image freedomFill;
+    Canvas canvas; Text header, statement, log, cashReadout, flowReadout, modeReadout, hoverCopy; RectTransform board; GameObject token, hoverPanel, cityBackdrop; Sprite circleSprite, roundedSprite; Font uiFont; readonly Dictionary<string, Sprite> artSprites = new Dictionary<string, Sprite>(); readonly List<Button> tileButtons = new List<Button>(); readonly List<GameObject> boardDecorations = new List<GameObject>();
 
-    void Awake() { BuildCanvas(); }
+    void LateUpdate()
+    {
+        if(board==null)return;
+        Rect safe=Screen.safeArea; if(safe.width<=0||safe.height<=0||safe.xMax>Screen.width||safe.yMax>Screen.height)safe=new Rect(0,0,Screen.width,Screen.height);
+        float straight=Mathf.Max(328,328+(720*safe.width/safe.height-1280)/2);
+        if(Mathf.Abs(BoardTrackGenerator.Straight-straight)>.5f){BoardTrackGenerator.Straight=straight;DrawBoard();}
+    }
+    void Awake() { Application.runInBackground=true; BuildCanvas(); }
     public void OpenScene(string sceneName)
     {
         if (sceneName == "ProfessionSelection" || sceneName == "Main") ShowSetup();
@@ -69,22 +77,48 @@ public class CashflowGame : MonoBehaviour
         for(int y=0;y<height;y++) for(int x=0;x<width;x++)
         {
             float dx=Mathf.Max(radius-x-1,0,x-(width-radius)); float dy=Mathf.Max(radius-y-1,0,y-(height-radius));
-            pixels[y*width+x]=(dx*dx+dy*dy<=radius*radius)?Color.white:Color.clear;
+            pixels[y*width+x]=new Color(1,1,1,Mathf.Clamp01(radius-Mathf.Sqrt(dx*dx+dy*dy)+.5f));
         }
-        texture.SetPixels(pixels); texture.Apply(); roundedSprite=Sprite.Create(texture,new Rect(0,0,width,height),new Vector2(.5f,.5f),100,0,SpriteMeshType.FullRect); return roundedSprite;
+        texture.SetPixels(pixels); texture.Apply(); roundedSprite=Sprite.Create(texture,new Rect(0,0,width,height),new Vector2(.5f,.5f),100,0,SpriteMeshType.FullRect,new Vector4(16,16,16,16)); return roundedSprite;
+    }
+    Sprite ArtSprite(string key, string resource, Rect normalizedTopLeft)
+    {
+        if (artSprites.TryGetValue(key, out var cached)) return cached;
+        var texture = Resources.Load<Texture2D>(resource);
+        if (texture == null) return null;
+        var rect = new Rect(normalizedTopLeft.x * texture.width, (1f-normalizedTopLeft.y-normalizedTopLeft.height) * texture.height, normalizedTopLeft.width * texture.width, normalizedTopLeft.height * texture.height);
+        var sprite = Sprite.Create(texture,rect,new Vector2(.5f,.5f),100);
+        artSprites[key] = sprite;
+        return sprite;
+    }
+    Sprite TileArt(string title)
+    {
+        if(title.Contains("MARKET")) return ArtSprite("market","GameBoard/event-icons-sheet",new Rect(.05f,.53f,.27f,.36f));
+        if(title.Contains("DOODAD") || title.Contains("AUDIT") || title.Contains("LAWSUIT") || title.Contains("DIVORCE") || title.Contains("CORRECTION")) return ArtSprite("gadget","GameBoard/event-icons-sheet",new Rect(.69f,.04f,.25f,.38f));
+        if(title.Contains("CHARITY")) return ArtSprite("charity","GameBoard/event-icons-sheet",new Rect(.36f,.52f,.27f,.38f));
+        if(title.Contains("DOWNSIZED")) return ArtSprite("downsize","GameBoard/event-icons-sheet",new Rect(.35f,.03f,.27f,.40f));
+        if(title.Contains("OPPORTUNITY") || title.Contains("DEAL") || title.Contains("+")) return ArtSprite("grocery","GameBoard/event-icons-sheet",new Rect(.05f,.03f,.27f,.40f));
+        return null;
+    }
+    Sprite DeckArt(string name)
+    {
+        if(name == "OPPORTUNITY") return ArtSprite("deck-opportunity","GameBoard/cards-sheet",new Rect(.04f,.12f,.34f,.68f));
+        if(name == "MARKET") return ArtSprite("deck-market","GameBoard/cards-sheet",new Rect(.39f,.18f,.22f,.62f));
+        if(name == "EXPENSE") return ArtSprite("deck-expense","GameBoard/cards-sheet",new Rect(.63f,.08f,.25f,.66f));
+        return ArtSprite("deck-charity","GameBoard/cards-sheet",new Rect(.73f,.28f,.23f,.65f));
     }
     Text Label(Transform parent, string value, int size, TextAnchor align = TextAnchor.MiddleCenter) { var go=new GameObject("Text",typeof(RectTransform),typeof(Text)); go.transform.SetParent(parent,false); var t=go.GetComponent<Text>(); t.font=Font(); t.text=value; t.fontSize=size; t.alignment=align; t.color=Color.white; t.horizontalOverflow=HorizontalWrapMode.Wrap; t.verticalOverflow=VerticalWrapMode.Overflow; t.raycastTarget=false; return t; }
     Button Button(Transform parent,string title,Color color,Action action) { var go=new GameObject(title,typeof(RectTransform),typeof(Image),typeof(Button)); go.transform.SetParent(parent,false); go.GetComponent<Image>().color=color; var b=go.GetComponent<Button>(); b.onClick.AddListener(()=>action()); var tx=Label(go.transform,title,16); Stretch(tx.rectTransform); return b; }
     void Stretch(RectTransform r) { r.anchorMin=Vector2.zero;r.anchorMax=Vector2.one;r.offsetMin=new Vector2(5,4);r.offsetMax=new Vector2(-5,-4); }
-    void BuildCanvas() { var root=new GameObject("Cashflow Unity",typeof(Canvas),typeof(CanvasScaler),typeof(GraphicRaycaster)); canvas=root.GetComponent<Canvas>(); canvas.renderMode=RenderMode.ScreenSpaceOverlay; var scaler=root.GetComponent<CanvasScaler>(); scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution=new Vector2(1280,720); var bg=new GameObject("Background",typeof(Image)); bg.transform.SetParent(root.transform,false); bg.GetComponent<Image>().color=C("#0b1220"); Stretch(bg.GetComponent<RectTransform>()); }
-    void ClearUI() { foreach(Transform child in canvas.transform) if(child.name!="Background") Destroy(child.gameObject); }
+    void BuildCanvas() { var root=new GameObject("Cashflow Unity",typeof(Canvas),typeof(CanvasScaler),typeof(GraphicRaycaster)); canvas=root.GetComponent<Canvas>(); canvas.renderMode=RenderMode.ScreenSpaceOverlay; var scaler=root.GetComponent<CanvasScaler>(); scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution=new Vector2(1280,720); scaler.matchWidthOrHeight=.5f; uiRoot=new GameObject("Safe Area",typeof(RectTransform),typeof(SafeBoardLayout)).GetComponent<RectTransform>(); uiRoot.SetParent(root.transform,false); var bg=new GameObject("Background",typeof(Image)); bg.transform.SetParent(uiRoot,false); bg.GetComponent<Image>().color=C("#0b1220"); Stretch(bg.GetComponent<RectTransform>()); }
+    void ClearUI() { foreach(Transform child in uiRoot) if(child.name!="Background") Destroy(child.gameObject); }
     // Landing page: designed to match the original game's financial-strategy dashboard.
     void ShowSetup()
     {
         if (profession == null) profession = professions[0];
         ClearUI();
 
-        var shell = Panel(canvas.transform, new Vector2(.5f,.5f), new Vector2(.5f,.5f), new Vector2(1220,650), C("#080f1d"));
+        var shell = Panel(uiRoot, new Vector2(.5f,.5f), new Vector2(.5f,.5f), new Vector2(1220,650), C("#080f1d"));
         var shellImage = shell.GetComponent<Image>();
 
         // Header ---------------------------------------------------------------
@@ -148,7 +182,7 @@ public class CashflowGame : MonoBehaviour
         selectedDream = Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream", selectedDream), 0, dreams.Length - 1);
         if (selectedDream < 0 || selectedDream >= dreams.Length) selectedDream = 0;
         ClearUI();
-        var shell = Panel(canvas.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1220,650),C("#080f1d"));
+        var shell = Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1220,650),C("#080f1d"));
 
         // Shared branded header
         var icon=Panel(shell.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(52,52),C("#00c98d")); Place(icon.GetComponent<RectTransform>(),-548,270,52,52);
@@ -190,7 +224,7 @@ public class CashflowGame : MonoBehaviour
     {
         ClearUI();
         // Compact status bar, inspired by the reference game's play screen.
-        var top=Panel(canvas.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1280,74),C("#090f1b")); Place(top.GetComponent<RectTransform>(),0,323,1280,74);
+        var top=Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1280,74),C("#090f1b")); Place(top.GetComponent<RectTransform>(),0,323,1280,74);
         var money=Panel(top.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(42,42),C("#c98400")); Place(money.GetComponent<RectTransform>(),-605,0,42,42);
         var cashIcon=Label(money.transform,"$",22); cashIcon.color=C("#071224"); cashIcon.fontStyle=FontStyle.Bold; Stretch(cashIcon.rectTransform);
         var mode=Panel(top.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(82,29),C("#202458")); Place(mode.GetComponent<RectTransform>(),-540,0,82,29);
@@ -206,58 +240,73 @@ public class CashflowGame : MonoBehaviour
         var menu=Button(top.transform,"⋮",C("#26354d"),()=>Log("How to play: roll, invest, grow passive income, then reach your dream.")); Place(menu.GetComponent<RectTransform>(),555,0,42,42); SetButtonText(menu,Color.white,25);
 
         // The board occupies the complete game area below the persistent header.
-        board=new GameObject("Game Board",typeof(RectTransform),typeof(Image)).GetComponent<RectTransform>(); board.SetParent(canvas.transform,false); board.GetComponent<Image>().color=new Color(1,1,1,0); board.GetComponent<Image>().raycastTarget=false; Place(board,0,-37,1280,646);
+        board=new GameObject("Game Board",typeof(RectTransform),typeof(Image)).GetComponent<RectTransform>(); board.SetParent(uiRoot,false); board.GetComponent<Image>().color=new Color(1,1,1,0); board.GetComponent<Image>().raycastTarget=false; Place(board,0,8,1280,540);
         AddCityBackdrop();
 
         DrawBoard();
-        hoverPanel=Panel(canvas.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(490,42),C("#182b4b")); Place(hoverPanel.GetComponent<RectTransform>(),0,-265,490,42); hoverPanel.GetComponent<Image>().raycastTarget=false;
+        hoverPanel=Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(490,42),C("#182b4b")); Place(hoverPanel.GetComponent<RectTransform>(),0,-265,490,42); hoverPanel.GetComponent<Image>().raycastTarget=false;
         hoverCopy=Label(hoverPanel.transform,"Hover over a board tile to view its effect",13); hoverCopy.color=C("#d4ddea"); hoverCopy.raycastTarget=false; Stretch(hoverCopy.rectTransform); hoverPanel.SetActive(false);
         CreateGameHUD();
-        log=Label(canvas.transform,"",14); log.color=C("#ffffff"); log.fontStyle=FontStyle.Bold; Place(log.rectTransform,0,-284,700,22);
+        log=Label(uiRoot,"",14); log.color=C("#ffffff"); log.fontStyle=FontStyle.Bold; Place(log.rectTransform,0,-265,700,18);
         Refresh();
     }
     void CreateGameHUD()
     {
         // Fixed HUD: it remains readable while the board world stays unobstructed.
-        var bottom=Panel(canvas.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1280,86),C("#2d2450")); Place(bottom.GetComponent<RectTransform>(),0,-317,1280,86);
+        var bottom=Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1280,86),C("#2d2450")); Place(bottom.GetComponent<RectTransform>(),0,-317,1280,86);
         var portrait=Panel(bottom.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(60,60),C("#f6b34d")); Place(portrait.GetComponent<RectTransform>(),-560,0,60,60); portrait.GetComponent<Image>().sprite=CircleSprite();
-        var portraitMark=Label(portrait.transform,"♟",31); portraitMark.color=C("#48285e"); Stretch(portraitMark.rectTransform);
-        var cashLabel=Label(bottom.transform,"CASH BALANCE",11,TextAnchor.MiddleLeft); cashLabel.color=C("#eadfff"); Place(cashLabel.rectTransform,-495,16,170,20);
-        var cashValue=Label(bottom.transform,Money(cash),25,TextAnchor.MiddleLeft); cashValue.color=C("#f8d45a"); cashValue.fontStyle=FontStyle.Bold; Place(cashValue.rectTransform,-495,-12,200,30);
+        var portraitArt=new GameObject("Player Portrait Art",typeof(RectTransform),typeof(Image)); portraitArt.transform.SetParent(portrait.transform,false); var portraitImage=portraitArt.GetComponent<Image>(); portraitImage.sprite=ArtSprite("player-portrait","GameBoard/character-pieces-sheet",new Rect(.07f,.08f,.21f,.34f)); portraitImage.preserveAspect=true; portraitImage.raycastTarget=false; Stretch(portraitArt.GetComponent<RectTransform>());
+        var cashLabel=Label(bottom.transform,"CASH BALANCE",11,TextAnchor.MiddleLeft); cashLabel.color=C("#eadfff"); Place(cashLabel.rectTransform,-395,16,220,20);
+        var cashValue=Label(bottom.transform,Money(cash),25,TextAnchor.MiddleLeft); bottomCash=cashValue; cashValue.color=C("#f8d45a"); cashValue.fontStyle=FontStyle.Bold; Place(cashValue.rectTransform,-395,-12,220,30);
         var passiveLabel=Label(bottom.transform,"PASSIVE INCOME",12); passiveLabel.color=C("#eadfff"); passiveLabel.fontStyle=FontStyle.Bold; Place(passiveLabel.rectTransform,-90,23,280,20);
         var progressBack=Panel(bottom.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(380,20),C("#16112a")); Place(progressBack.GetComponent<RectTransform>(),-90,-4,380,20);
         var progress=Panel(progressBack.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(145,13),C("#86c94f")); Place(progress.GetComponent<RectTransform>(),-112,0,145,13);
-        var progressText=Label(bottom.transform,"Build your monthly freedom",11); progressText.color=C("#ffffff"); Place(progressText.rectTransform,-90,-27,290,17);
-        var roll=Button(bottom.transform,"⚄  ROLL DICE",C("#69b642"),Roll); roll.GetComponent<Image>().sprite=RoundedSprite(); Place(roll.GetComponent<RectTransform>(),485,0,235,60); SetButtonText(roll,Color.white,25); var outline=roll.gameObject.AddComponent<Outline>(); outline.effectColor=C("#f6f1ca"); outline.effectDistance=new Vector2(3,3);
-        string[] controls={"⚙","◎"}; for(int i=0;i<controls.Length;i++){int n=i;var control=Button(canvas.transform,controls[i],C("#385c9d"),()=>{if(n==0)Log("Settings will be available here.");else MoveToken();});Place(control.GetComponent<RectTransform>(),570,195-i*55,42,42);SetButtonText(control,Color.white,20);}
+        freedomFill=progress.GetComponent<Image>(); freedomFill.sprite=RoundedSprite(); freedomFill.type=Image.Type.Filled; freedomFill.fillMethod=Image.FillMethod.Horizontal; Place(progress.GetComponent<RectTransform>(),0,0,370,13);
+        var progressText=Label(bottom.transform,"Build your monthly freedom",11); freedomText=progressText; progressText.color=C("#ffffff"); Place(progressText.rectTransform,-90,-27,290,17);
+        var roll=Button(bottom.transform,"ROLL DICE",C("#69b642"),Roll); roll.GetComponent<Image>().sprite=RoundedSprite(); Place(roll.GetComponent<RectTransform>(),485,0,235,60); SetButtonText(roll,Color.white,25); var outline=roll.gameObject.AddComponent<Outline>(); outline.effectColor=C("#f6f1ca"); outline.effectDistance=new Vector2(3,3);
+        var diceArt=new GameObject("Dice Icon",typeof(RectTransform),typeof(Image)); diceArt.transform.SetParent(roll.transform,false);
+        var diceImage=diceArt.GetComponent<Image>(); diceImage.sprite=RoundedSprite(); diceImage.type=Image.Type.Sliced; diceImage.color=Color.white; diceImage.raycastTarget=false;
+        Place(diceArt.GetComponent<RectTransform>(),-78,0,38,38);
+        foreach(var dot in new[]{new Vector2(-9,-9),new Vector2(9,-9),Vector2.zero,new Vector2(-9,9),new Vector2(9,9)})
+        {
+            var pip=new GameObject("Pip",typeof(RectTransform),typeof(Image)); pip.transform.SetParent(diceArt.transform,false);
+            pip.GetComponent<Image>().sprite=CircleSprite(); pip.GetComponent<Image>().color=C("#254e43"); pip.GetComponent<Image>().raycastTarget=false;
+            Place(pip.GetComponent<RectTransform>(),dot.x,dot.y,6,6);
+        }
+        var rollLabel=roll.GetComponentInChildren<Text>(); Place(rollLabel.rectTransform,22,0,165,48);
+        diceResult=Label(bottom.transform,"READY TO ROLL",12); Place(diceResult.rectTransform,270,0,145,40);
+        string[] controls={"SET","FIT"}; for(int i=0;i<controls.Length;i++){int n=i;var control=Button(uiRoot,controls[i],C("#385c9d"),()=>{if(n==0)ShowBoardSettings();else {board.localScale=Vector3.one;board.anchoredPosition=new Vector2(0,8);MoveToken();}});Place(control.GetComponent<RectTransform>(),590,272-i*48,66,38);control.GetComponent<Image>().sprite=RoundedSprite(); control.GetComponent<Image>().type=Image.Type.Sliced; SetButtonText(control,Color.white,12);}
+    }
+    void ShowBoardSettings()
+    {
+        var panel=Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(440,240),C("#191c36"));
+        var title=Label(panel.transform,"BOARD SETTINGS",22); Place(title.rectTransform,0,83,400,36);
+        var backdrop=Button(panel.transform,"TOGGLE CITY BACKDROP",C("#385c9d"),()=>{if(cityBackdrop!=null)cityBackdrop.SetActive(!cityBackdrop.activeSelf);}); Place(backdrop.GetComponent<RectTransform>(),0,22,340,44);
+        var close=Button(panel.transform,"DONE",C("#079d70"),()=>Destroy(panel)); Place(close.GetComponent<RectTransform>(),0,-68,180,44);
     }
     GameObject Panel(Transform p,Vector2 aMin,Vector2 aMax,Vector2 size,Color c){var go=new GameObject("Panel",typeof(RectTransform),typeof(Image));go.transform.SetParent(p,false);var r=go.GetComponent<RectTransform>();r.anchorMin=aMin;r.anchorMax=aMax;r.sizeDelta=size;go.GetComponent<Image>().color=c;return go;}
     void Place(RectTransform r,float x,float y,float w,float h){r.anchorMin=r.anchorMax=new Vector2(.5f,.5f);r.anchoredPosition=new Vector2(x,y);r.sizeDelta=new Vector2(w,h);}
     void DrawBoard()
     {
-        foreach(var b in tileButtons) Destroy(b.gameObject); tileButtons.Clear();
-        foreach(var decoration in boardDecorations) Destroy(decoration); boardDecorations.Clear();
+        foreach(var b in tileButtons) {b.gameObject.SetActive(false);Destroy(b.gameObject);} tileButtons.Clear();
+        foreach(var decoration in boardDecorations) {decoration.SetActive(false);Destroy(decoration);} boardDecorations.Clear();
         if (token != null) Destroy(token);
-        // Smooth integrated lanes replace loose card-like spaces.
-        BoardLayer("Board Shadow", 0, -3, 1145, 515, new Color(.08f,.16f,.24f,.45f));
-        var table=BoardLayer("Board Frame",0,5,1125,505,new Color(1f,.97f,.82f,.94f)); var tableOutline=table.AddComponent<Outline>(); tableOutline.effectColor=C("#ffffff"); tableOutline.effectDistance=new Vector2(3,3);
-        BoardLayer("Park Border",0,5,1088,468,C("#6db45a"));
-        BoardLayer("Street Lane",0,5,1028,410,C("#e9eceb"));
-        BoardLayer("Street Inset",0,5,954,350,C("#78ad50"));
-        BoardLayer("Wealth Lane",0,5,800,258,C("#684181"));
-        var center=BoardLayer("Cashflow Center",0,5,590,190,C("#24113f")); var centerOutline=center.AddComponent<Outline>(); centerOutline.effectColor=C("#e8bd55"); centerOutline.effectDistance=new Vector2(3,3);
-
-        var fastLabel=Label(board,"WEALTH TRACK",15); fastLabel.color=C("#fff6c3"); fastLabel.fontStyle=FontStyle.Bold; Place(fastLabel.rectTransform,0,122,220,23);
-        CreateTrack(fastTiles, 385, 112, 76, 38, true);
-        var ratLabel=Label(board,"STREET LIFE",15); ratLabel.color=C("#ffffff"); ratLabel.fontStyle=FontStyle.Bold; Place(ratLabel.rectTransform,0,-170,190,23);
-        CreateTrack(ratTiles, 480, 178, 76, 38, false);
+        if(cityBackdrop!=null)cityBackdrop.GetComponent<RectTransform>().sizeDelta=new Vector2(1280+2*(BoardTrackGenerator.Straight-328),540);
+        BoardLayer("Board Shadow",0,-5,1190,530,C("#102333"));
+        BoardLayer("Board Frame",0,0,1180,520,C("#edd38c"));
+        BoardLayer("Park Border",0,0,1168,508,C("#254e43"));
+        BoardLayer("Gold Mat Trim",0,0,662,186,C("#e8bd55"));
+        BoardLayer("Cashflow Center",0,0,652,176,C("#281440"));
+        CreateTrack(fastTiles,466,138,0,70,true);
+        CreateTrack(ratTiles,550,222,0,70,false);
         CenterPresentation();
-        token=new GameObject("Player Token",typeof(RectTransform),typeof(Image)); token.transform.SetParent(board,false); token.GetComponent<Image>().sprite=CircleSprite(); token.GetComponent<Image>().color=C("#facc15"); token.GetComponent<RectTransform>().sizeDelta=new Vector2(26,26); var tokenOutline=token.AddComponent<Outline>(); tokenOutline.effectColor=Color.white; tokenOutline.effectDistance=new Vector2(2,2); MoveToken();
+        token=new GameObject("Player Token",typeof(RectTransform),typeof(Image)); token.transform.SetParent(board,false); token.GetComponent<Image>().sprite=CircleSprite(); token.GetComponent<Image>().color=C("#facc15"); token.GetComponent<RectTransform>().sizeDelta=new Vector2(22,22); token.GetComponent<Image>().raycastTarget=false; var pawn=Label(token.transform,"P1",10); pawn.color=C("#24113f"); Stretch(pawn.rectTransform); var tokenOutline=token.AddComponent<Outline>(); tokenOutline.effectColor=Color.white; tokenOutline.effectDistance=new Vector2(2,2); MoveToken();
     }
     GameObject BoardLayer(string name,float x,float y,float width,float height,Color color)
     {
+        if(name=="Board Frame"||name=="Board Shadow"||name=="Park Border"||name=="Gold Mat Trim"||name=="Cashflow Center")width+=2*(BoardTrackGenerator.Straight-328);
         var layer=new GameObject(name,typeof(RectTransform),typeof(Image)); layer.transform.SetParent(board,false); layer.transform.SetAsLastSibling();
-        var image=layer.GetComponent<Image>(); image.sprite=RoundedSprite(); image.color=color; image.raycastTarget=false; Place(layer.GetComponent<RectTransform>(),x,y,width,height); boardDecorations.Add(layer); return layer;
+        var image=layer.GetComponent<Image>(); image.sprite=RoundedSprite(); image.type=Image.Type.Sliced; image.color=color; image.raycastTarget=false; Place(layer.GetComponent<RectTransform>(),x,y,width,height); boardDecorations.Add(layer); return layer;
     }
     void AddCityBackdrop()
     {
@@ -266,13 +315,13 @@ public class CashflowGame : MonoBehaviour
         var backdrop = new GameObject("Illustrated City Backdrop",typeof(RectTransform),typeof(RawImage));
         backdrop.transform.SetParent(board,false); backdrop.transform.SetAsFirstSibling();
         var image = backdrop.GetComponent<RawImage>(); image.texture=city; image.color=Color.white; image.raycastTarget=false;
-        Place(backdrop.GetComponent<RectTransform>(),0,0,1280,646);
+        Place(backdrop.GetComponent<RectTransform>(),0,0,1280,540);
         cityBackdrop = backdrop;
     }
     void CenterPresentation()
     {
-        var title=Label(board,"CASHFLOW 101",27); title.fontStyle=FontStyle.Bold; title.color=C("#ffe27a"); Place(title.rectTransform,0,58,300,38);
-        var subtitle=Label(board,"Financial Freedom Dashboard",12); subtitle.fontStyle=FontStyle.Bold; subtitle.color=C("#d9c9f7"); Place(subtitle.rectTransform,0,32,320,20);
+        var title=Label(board,"CASHFLOW 101",24); boardDecorations.Add(title.gameObject); title.fontStyle=FontStyle.Bold; title.color=C("#ffe27a"); Place(title.rectTransform,0,64,300,30);
+        var subtitle=Label(board,"BUILD YOUR FINANCIAL FREEDOM",9); boardDecorations.Add(subtitle.gameObject); subtitle.fontStyle=FontStyle.Bold; subtitle.color=C("#d9c9f7"); Place(subtitle.rectTransform,0,42,320,14);
         CenterCard(-195,"OPPORTUNITY","↗",C("#c93338"));
         CenterCard(-65,"MARKET","⌁",C("#176aa8"));
         CenterCard(65,"EXPENSE","$",C("#d78324"));
@@ -281,39 +330,25 @@ public class CashflowGame : MonoBehaviour
     void CenterCard(float x,string name,string icon,Color color)
     {
         // Three offset backing cards create a tidy deck stack.
-        for(int i=2;i>0;i--) { var back=BoardLayer(name+" card back",x-i*3,-21-i*3,75,101,new Color(.95f,.95f,.98f,.9f)); back.transform.SetAsLastSibling(); }
-        var card=BoardLayer("Center "+name,x,-12,75,101,color); card.transform.SetAsLastSibling();
-        var top=Label(card.transform,icon,27); top.fontStyle=FontStyle.Bold; Place(top.rectTransform,0,14,55,36);
-        var label=Label(card.transform,name,8); label.fontStyle=FontStyle.Bold; Place(label.rectTransform,0,-20,68,18);
+        for(int i=2;i>0;i--) { var back=BoardLayer(name+" card back",x-i*3,-31-i*3,75,101,new Color(.95f,.95f,.98f,.9f)); back.transform.SetAsLastSibling(); }
+        var card=BoardLayer("Center "+name,x,-22,75,101,color); card.transform.SetAsLastSibling();
+        var art=new GameObject("Deck Face Art",typeof(RectTransform),typeof(Image)); art.transform.SetParent(card.transform,false); var artImage=art.GetComponent<Image>(); artImage.sprite=DeckArt(name); artImage.preserveAspect=true; artImage.raycastTarget=false; Place(art.GetComponent<RectTransform>(),0,8,63,60);
+        var label=Label(card.transform,name,8); label.fontStyle=FontStyle.Bold; Place(label.rectTransform,0,-29,68,18);
     }
     void CreateTrack(string[] tiles, float rx, float ry, float w, float h, bool outer)
     {
-        for(int i=0;i<24;i++)
+        for(int i=0;i<tiles.Length;i++)
         {
-            float angle=(i/24f)*Mathf.PI*2-Mathf.PI/2; int n=i; string title=tiles[i];
-            var pos=new Vector2(Mathf.Cos(angle)*rx,Mathf.Sin(angle)*ry);
-            var accent=TileAccent(title,outer);
-
-            // Standardized, flat, readable lane segments with a soft shadow and category rim.
-            var shadow=new GameObject("Tile Shadow",typeof(RectTransform),typeof(Image)); shadow.transform.SetParent(board,false); var shadowImage=shadow.GetComponent<Image>(); shadowImage.sprite=RoundedSprite(); shadowImage.color=new Color(0,0,0,.25f); shadowImage.raycastTarget=false; Place(shadow.GetComponent<RectTransform>(),pos.x+2,pos.y-2,w+4,h+4); boardDecorations.Add(shadow);
-            var rim=new GameObject("Tile Rim",typeof(RectTransform),typeof(Image)); rim.transform.SetParent(board,false); var rimImage=rim.GetComponent<Image>(); rimImage.sprite=RoundedSprite(); rimImage.color=accent; rimImage.raycastTarget=false; Place(rim.GetComponent<RectTransform>(),pos.x,pos.y,w+3,h+3); boardDecorations.Add(rim);
-
-            var b=Button(board,"",TileColor(title),()=>ShowTileDetails(title,outer));
-            var background=b.GetComponent<Image>(); background.sprite=RoundedSprite(); background.type=Image.Type.Simple; Place(b.GetComponent<RectTransform>(),pos.x,pos.y,w,h);
-            var outline=b.gameObject.AddComponent<Outline>(); outline.effectColor=new Color(1,1,1,.65f); outline.effectDistance=new Vector2(1,1);
-
-            // Center medallion: recognizable at a glance and visually distinct
-            // from the tile's title band below it.
-            var medallion=new GameObject("Icon Medallion",typeof(RectTransform),typeof(Image)); medallion.transform.SetParent(b.transform,false); var medallionImage=medallion.GetComponent<Image>(); medallionImage.sprite=CircleSprite(); medallionImage.color=accent; medallionImage.raycastTarget=false; Place(medallion.GetComponent<RectTransform>(),-w*.25f,0,outer?19:18,outer?19:18);
-            var glyph=Label(medallion.transform,TileGlyph(title),outer?10:9); glyph.fontStyle=FontStyle.Bold; glyph.color=C("#071224"); Stretch(glyph.rectTransform);
-            var caption=Label(b.transform,ShortTitle(title),outer?7:7,TextAnchor.MiddleLeft); caption.fontStyle=FontStyle.Bold; caption.color=C("#ffffff"); Place(caption.rectTransform,w*.07f,0,w*.62f,23);
-
-            // Numbered badge on every space makes the route feel deliberate and
-            // helps players follow the token during rolls.
-            var badge=new GameObject("Space Number",typeof(RectTransform),typeof(Image)); badge.transform.SetParent(b.transform,false); var badgeImage=badge.GetComponent<Image>(); badgeImage.sprite=CircleSprite(); badgeImage.color=outer?C("#44335f"):C("#255f3c"); badgeImage.raycastTarget=false; Place(badge.GetComponent<RectTransform>(),w*.37f,h*.27f,outer?11:10,outer?11:10);
-            var number=Label(badge.transform,(n+1).ToString(),outer?5:5); number.color=C("#fef3c7"); Stretch(number.rectTransform);
-            AddTileHover(b, title, outer);
-            tileButtons.Add(b);
+            string title=tiles[i];
+            var segment=BoardTrackGenerator.Segment(board,i,tiles.Length,ry,h,TileColor(title));
+            var button=segment.gameObject.AddComponent<Button>(); button.targetGraphic=segment;
+            button.onClick.AddListener(()=>ShowTileDetails(title,outer));
+            var content=new GameObject("Space Label",typeof(RectTransform)); content.transform.SetParent(segment.transform,false);
+            Vector2 p=BoardTrackGenerator.Point(i/(float)tiles.Length,ry);
+            Place(content.GetComponent<RectTransform>(),p.x,p.y,70,60);
+            var icon=Label(content.transform,TileGlyph(title),22); icon.color=C("#ffe4a1"); Place(icon.rectTransform,0,10,48,26);
+            var caption=Label(content.transform,ShortTitle(title),10); caption.fontStyle=FontStyle.Bold; Place(caption.rectTransform,0,-15,72,24);
+            AddTileHover(button,title,outer); tileButtons.Add(button);
         }
     }
     Color TileAccent(string title, bool outer)
@@ -333,8 +368,8 @@ public class CashflowGame : MonoBehaviour
         var enter=new EventTrigger.Entry { eventID=EventTriggerType.PointerEnter }; enter.callback.AddListener(_=>ShowHover((outer?"FAST TRACK: ":"RAT RACE: ")+title+" — "+TileDescription(title))); trigger.triggers.Add(enter);
         var exit=new EventTrigger.Entry { eventID=EventTriggerType.PointerExit }; exit.callback.AddListener(_=>HideHover()); trigger.triggers.Add(exit);
     }
-    void ShowHover(string value) { if(hoverPanel!=null){hoverPanel.SetActive(true);hoverCopy.text=value;} }
-    void HideHover() { if(hoverPanel!=null)hoverPanel.SetActive(false); }
+    void ShowHover(string value) { if(hoverPanel!=null){hoverPanel.SetActive(true);hoverCopy.text=value;if(log!=null)log.gameObject.SetActive(false);} }
+    void HideHover() { if(hoverPanel!=null)hoverPanel.SetActive(false);if(log!=null)log.gameObject.SetActive(true); }
     string TileDescription(string title)
     {
         if(title.Contains("PAYDAY")||title.Contains("CASHFLOW")) return "collect your monthly cashflow.";
@@ -351,7 +386,7 @@ public class CashflowGame : MonoBehaviour
     void ShowTileDetails(string title, bool outer) { ShowEventPanel((outer?"FAST TRACK":"RAT RACE")+" • "+title,TileDescription(title)+"\n\nClick Roll to land here and resolve the event.",outer?C("#075e50"):TileColor(title)); }
     void ShowEventPanel(string title, string details, Color color)
     {
-        var shade=Panel(canvas.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(470,255),C("#101b2e"));
+        var shade=Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(470,255),C("#101b2e"));
         var bar=Panel(shade.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(470,45),color); Place(bar.GetComponent<RectTransform>(),0,105,470,45);
         var heading=Label(bar.transform,title,18); heading.fontStyle=FontStyle.Bold; Stretch(heading.rectTransform);
         var copy=Label(shade.transform,details,17); copy.color=C("#d4ddea"); Place(copy.rectTransform,0,10,410,115);
@@ -390,8 +425,8 @@ public class CashflowGame : MonoBehaviour
         var count=Label(deck.transform,"◉  20 CARDS",7); count.color=C("#9fb0c8"); Place(count.rectTransform,0,-22,100,14);
     }
     Color TileColor(string s){if(s.Contains("PAYDAY")||s.Contains("CASHFLOW"))return C("#a16207");if(s.Contains("OPPORTUNITY")||s.Contains("+"))return C("#047857");if(s.Contains("DOODAD")||s.Contains("AUDIT")||s.Contains("LAWSUIT")||s.Contains("DIVORCE"))return C("#b91c1c");if(s.Contains("DREAM"))return C("#7e22ce");if(s.Contains("MARKET"))return C("#6b21a8");return C("#0369a1");}
-    void MoveToken(){int p=fastTrack?fastPosition:position;float angle=(p/24f)*Mathf.PI*2-Mathf.PI/2;float rx=fastTrack?385:480,ry=fastTrack?112:178;token.GetComponent<RectTransform>().anchoredPosition=new Vector2(Mathf.Cos(angle)*rx,Mathf.Sin(angle)*ry);}
-    void Roll(){if(skipTurns>0){skipTurns--;Log("Downsized: turn skipped ("+skipTurns+" left).");return;}int die=Random.Range(1,charity?13:7);if(charity)charity=false;int old=fastTrack?fastPosition:position;if(fastTrack)fastPosition=(fastPosition+die)%24;else position=(position+die)%24;if(!fastTrack&&old+die>=24)Payday();MoveToken();Land(fastTrack?fastTiles[fastPosition]:ratTiles[position]);Refresh();}
+    void MoveToken(){int p=fastTrack?fastPosition:position; token.GetComponent<RectTransform>().anchoredPosition=BoardTrackGenerator.Point(p/24f,fastTrack?138:222)+new Vector2(0,22);}
+    void Roll(){if(skipTurns>0){skipTurns--;Log("Downsized: turn skipped ("+skipTurns+" left).");return;}int die=Random.Range(1,7); if(charity)die+=Random.Range(1,7); if(diceResult!=null)diceResult.text="ROLLED  "+die;if(charity)charity=false;int old=fastTrack?fastPosition:position;if(fastTrack)fastPosition=(fastPosition+die)%24;else position=(position+die)%24;if(!fastTrack&&old+die>=24)Payday();MoveToken();Land(fastTrack?fastTiles[fastPosition]:ratTiles[position]);Refresh();}
     void Land(string tile)
     {
         if(tile=="PAYDAY"){ Payday(); ShowEventPanel("PAYDAY","Your monthly cashflow was added to cash.\n\nCollected: "+Money(Income()-Expenses()),C("#a16207")); return; }
@@ -409,7 +444,7 @@ public class CashflowGame : MonoBehaviour
             else{int lost=cash-cash/2;cash=Mathf.Max(0,cash/2);Log("Fast Track hazard reduced cash.");ShowEventPanel("FAST TRACK HAZARD","A setback reduced your available cash.\n\nLost: "+Money(lost),C("#b91c1c"));}
         }
     }
-    void OfferDeal(Deal d){if(cash<d.down){Log("Opportunity: "+d.title+" needs "+Money(d.down)+" — insufficient cash.");return;}var popup=Panel(canvas.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(440,260),C("#1e3a5f"));var text=Label(popup.transform,"OPPORTUNITY\n"+d.title+"\nDown payment "+Money(d.down)+" • +"+Money(d.flow)+"/month",20);Place(text.rectTransform,0,60,400,145);var buy=Button(popup.transform,"BUY",C("#16a34a"),()=>{cash-=d.down;passive+=d.flow;Destroy(popup);Log("Bought "+d.title+". Passive income +"+Money(d.flow));CheckEscape();Refresh();});Place(buy.GetComponent<RectTransform>(),-100,-80,130,42);var pass=Button(popup.transform,"PASS",C("#64748b"),()=>{Destroy(popup);Log("Passed on "+d.title);});Place(pass.GetComponent<RectTransform>(),100,-80,130,42);}
+    void OfferDeal(Deal d){if(cash<d.down){Log("Opportunity: "+d.title+" needs "+Money(d.down)+" — insufficient cash.");return;}var popup=Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(440,260),C("#1e3a5f"));var text=Label(popup.transform,"OPPORTUNITY\n"+d.title+"\nDown payment "+Money(d.down)+" • +"+Money(d.flow)+"/month",20);Place(text.rectTransform,0,60,400,145);var buy=Button(popup.transform,"BUY",C("#16a34a"),()=>{cash-=d.down;passive+=d.flow;Destroy(popup);Log("Bought "+d.title+". Passive income +"+Money(d.flow));CheckEscape();Refresh();});Place(buy.GetComponent<RectTransform>(),-100,-80,130,42);var pass=Button(popup.transform,"PASS",C("#64748b"),()=>{Destroy(popup);Log("Passed on "+d.title);});Place(pass.GetComponent<RectTransform>(),100,-80,130,42);}
     int Expenses(){return profession.taxes+profession.mortgagePay+profession.schoolPay+profession.carPay+profession.cardPay+profession.retailPay+profession.other+children*profession.childPay;}
     int Income(){return (fastTrack?0:profession.salary)+passive;}
     void Payday(){int amount=Income()-Expenses();cash+=amount;Log("PAYDAY: collected "+Money(amount));}
@@ -417,6 +452,9 @@ public class CashflowGame : MonoBehaviour
     void Refresh()
     {
         if(header==null)return;
+        if(bottomCash!=null)bottomCash.text=Money(cash);
+        if(freedomFill!=null)freedomFill.fillAmount=Mathf.Clamp01(passive/(float)Mathf.Max(1,Expenses()));
+        if(freedomText!=null)freedomText.text=Money(passive)+" / "+Money(Expenses())+" per month";
         header.text="●  Game started! Welcome, Player.";
         if(modeReadout!=null) modeReadout.text=fastTrack?"FAST TRACK":"RAT RACE";
         if(cashReadout!=null) cashReadout.text="◉  "+Money(cash);
@@ -424,6 +462,6 @@ public class CashflowGame : MonoBehaviour
     }
     void Log(string s){if(log!=null)log.text=s;}
     string Money(int v){return (v<0?"-":"")+"$"+Mathf.Abs(v).ToString("N0");}
-    void ShowStatement(){var popup=Panel(canvas.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(480,370),C("#172554"));var tx=Label(popup.transform,"FINANCIAL STATEMENT\n\nSalary: "+Money(fastTrack?0:profession.salary)+"\nPassive income: "+Money(passive)+"\nExpenses: "+Money(Expenses())+"\nMonthly cashflow: "+Money(Income()-Expenses())+"\nFreedom: "+(Expenses()==0?100:Mathf.Min(100,passive*100/Expenses()))+"%",20);Place(tx.rectTransform,0,20,430,280);var close=Button(popup.transform,"CLOSE",C("#475569"),()=>Destroy(popup));Place(close.GetComponent<RectTransform>(),0,-145,150,38);}
-    void Win(){var p=Panel(canvas.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(520,260),C("#581c87"));var t=Label(p.transform,"DREAM ACHIEVED!\n\nYou reached your dream: "+dream+"\n\nCongratulations!",26);Place(t.rectTransform,0,20,470,190);var again=Button(p.transform,"PLAY AGAIN",C("#16a34a"),StartGame);Place(again.GetComponent<RectTransform>(),0,-95,160,42);}
+    void ShowStatement(){var popup=Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(480,370),C("#172554"));var tx=Label(popup.transform,"FINANCIAL STATEMENT\n\nSalary: "+Money(fastTrack?0:profession.salary)+"\nPassive income: "+Money(passive)+"\nExpenses: "+Money(Expenses())+"\nMonthly cashflow: "+Money(Income()-Expenses())+"\nFreedom: "+(Expenses()==0?100:Mathf.Min(100,passive*100/Expenses()))+"%",20);Place(tx.rectTransform,0,20,430,280);var close=Button(popup.transform,"CLOSE",C("#475569"),()=>Destroy(popup));Place(close.GetComponent<RectTransform>(),0,-145,150,38);}
+    void Win(){var p=Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(520,260),C("#581c87"));var t=Label(p.transform,"DREAM ACHIEVED!\n\nYou reached your dream: "+dream+"\n\nCongratulations!",26);Place(t.rectTransform,0,20,470,190);var again=Button(p.transform,"PLAY AGAIN",C("#16a34a"),StartGame);Place(again.GetComponent<RectTransform>(),0,-95,160,42);}
 }

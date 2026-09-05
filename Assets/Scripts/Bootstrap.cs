@@ -17,8 +17,8 @@ public static class Bootstrap
 // Persists across scene loads and starts the matching page controller.
 public class CashflowSceneRouter : MonoBehaviour
 {
-    void Awake() { SceneManager.sceneLoaded += OnSceneLoaded; }
-    void OnDestroy() { SceneManager.sceneLoaded -= OnSceneLoaded; }
+    void OnEnable() { SceneManager.sceneLoaded += OnSceneLoaded; }
+    void OnDisable() { SceneManager.sceneLoaded -= OnSceneLoaded; }
     void OnSceneLoaded(Scene scene, LoadSceneMode mode) { Open(scene); }
 
     public void Open(Scene scene)
