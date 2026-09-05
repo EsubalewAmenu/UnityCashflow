@@ -25,3 +25,6 @@ The ZIP contains the complete Assets, Packages and ProjectSettings folders plus 
 
 ## Environment update
 The board now has a track-shaped physical base and narrow gold rim, removing the old filled rectangular corners. Slate replaces the green surround. The flat green ground and sphere trees have been replaced by a batched city plaza with stone paving, sidewalks, crosswalks, lane markings, pastel storefronts, striped awnings, windows, roof details, cars, lamps and benches. BoardEnvironment builds the scenery; BoardPlateGraphic supplies the curved perimeter. The four-resolution and one-/two-dice regression checks passed after these changes.
+
+## Mobile controls and framing
+Removed the right-side zoom/rotate controls and the minimap camera/render texture. Settings now lives in the bottom bar; its Camera View section switches between Overview and Follow. The scene renders across the full display width while the HUD retains safe-area padding. Perspective framing fits the curved board perimeter dynamically for different aspect ratios. Editor review includes 2532x1170 (iPhone 12) and 2340x1080 (Pixel 5), plus 1280x720, 1920x1080 and 1024x768. These are editor resolution checks, not physical-device tests.

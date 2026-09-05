@@ -168,7 +168,7 @@ public sealed class BoardWorld : MonoBehaviour
         {
             Vector2 edge=BoardTrackGenerator.Point(i/96f,267);
             Vector3 p=inverse*new Vector3(edge.x*.01f,.16f,edge.y*.01f);
-            distance=Mathf.Max(distance,Mathf.Abs(p.x)/tanH-p.z,Mathf.Abs(p.y)/tanV-p.z);
+            distance=Mathf.Max(distance,Mathf.Max(Mathf.Abs(p.x)/tanH-p.z,Mathf.Abs(p.y)/tanV-p.z));
         }
         return distance;
     }

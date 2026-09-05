@@ -106,7 +106,15 @@ public static class BoardReview
                 if(step==sizes.GetLength(0)*2+3)
                 {
                     File.AppendAllText(Path.Combine(Folder,"results.txt"),"PASS: single physical die, animated pawn landing, follow camera; minimap removed.\n");
-                    typeof(CashflowGame).GetMethod("ShowBoardSettings",flags).Invoke(game,null);
+                    GameObject.Find("Board Settings Button").GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+                    var settings=GameObject.Find("Modal Blocker");
+                    foreach(string mode in new[]{"OVERVIEW","FOLLOW"})
+                    {
+                        var choice=settings.GetComponentsInChildren<UnityEngine.UI.Button>().First(b=>b.GetComponentInChildren<UnityEngine.UI.Text>().text.StartsWith(mode));
+                        choice.onClick.Invoke();
+                        if(world.Follow!=(mode=="FOLLOW"))throw new Exception("Settings camera selection failed");
+                    }
+                    File.AppendAllText(Path.Combine(Folder,"results.txt"),"PASS: bottom-bar settings opens; Overview and Follow selections work.\n");
                     typeof(CashflowGame).GetMethod("Roll",flags).Invoke(game,null);
                     if((bool)typeof(CashflowGame).GetField("rolling",flags).GetValue(game))throw new Exception("Modal did not block rolling");
                     typeof(CashflowGame).GetMethod("CloseModal",flags).Invoke(game,null);

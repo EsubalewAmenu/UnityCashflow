@@ -2,3 +2,7 @@ PASS: 1280x720; 48 segments, shared seams, tile hit targets, HUD bounds.
 PASS: 1920x1080; 48 segments, shared seams, tile hit targets, HUD bounds.
 PASS: 2532x1170; 48 segments, shared seams, tile hit targets, HUD bounds.
 PASS: 2340x1080; 48 segments, shared seams, tile hit targets, HUD bounds.
+PASS: 1024x768; 48 segments, shared seams, tile hit targets, HUD bounds.
+PASS: single physical die, animated pawn landing, follow camera; minimap removed.
+PASS: bottom-bar settings opens; Overview and Follow selections work.
+PASS: two physical dice match movement; settings modal blocks extra rolls.
