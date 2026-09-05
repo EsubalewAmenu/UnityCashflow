@@ -244,24 +244,28 @@ public class CashflowGame : MonoBehaviour
             Place(pip.GetComponent<RectTransform>(),dot.x,dot.y,6,6);
         }
         var rollLabel=roll.GetComponentInChildren<Text>(); Place(rollLabel.rectTransform,22,0,165,48);
-        diceResult=Label(bottom.transform,"READY TO ROLL",12); Place(diceResult.rectTransform,270,0,145,40);
-        string[] controls={"SETTINGS","OVERVIEW","FOLLOW","ROTATE","ZOOM +","ZOOM -"};
-        for(int i=0;i<controls.Length;i++)
-        {
-            int n=i;var control=Button(uiRoot,controls[i],C("#544566"),()=>{if(n==0)ShowBoardSettings();else if(n==1)world.SetOverview(true);else if(n==2)world.SetOverview(false);else if(n==3)world.Orbit(35);else world.Zoom(n==4?-.15f:.15f);});
-            Place(control.GetComponent<RectTransform>(),585,198-i*47,100,39);control.GetComponent<Image>().sprite=RoundedSprite();control.GetComponent<Image>().type=Image.Type.Sliced;SetButtonText(control,Color.white,11);
-        }
-        var map=Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(200,108),C("#f4dfaa"));Place(map.GetComponent<RectTransform>(),530,290,200,108);
-        var image=new GameObject("Live minimap",typeof(RectTransform),typeof(RawImage),typeof(Button));image.transform.SetParent(map.transform,false);Stretch(image.GetComponent<RectTransform>());image.GetComponent<RawImage>().texture=world.OverviewTexture;image.GetComponent<Button>().onClick.AddListener(()=>world.SetOverview(true));
+        diceResult=Label(bottom.transform,"READY TO ROLL",12); Place(diceResult.rectTransform,285,0,140,40);
+        var settings=Button(bottom.transform,"SETTINGS",C("#544566"),ShowBoardSettings);
+        settings.gameObject.name="Board Settings Button";
+        Place(settings.GetComponent<RectTransform>(),160,0,100,52);
+        settings.GetComponent<Image>().sprite=RoundedSprite();
+        SetButtonText(settings,Color.white,12);
+
     }
     void ShowBoardSettings()
     {
-        var panel=Modal(new Vector2(440,330));
-        var title=Label(panel.transform,"BOARD SETTINGS",22);Place(title.rectTransform,0,120,400,36);
-        var sound=Button(panel.transform,world.Sound?"SOUND: ON":"SOUND: OFF",C("#544566"),()=>{});sound.onClick.AddListener(()=>{world.Sound=!world.Sound;sound.GetComponentInChildren<Text>().text=world.Sound?"SOUND: ON":"SOUND: OFF";});Place(sound.GetComponent<RectTransform>(),0,62,340,40);
-        var motion=Button(panel.transform,world.ReducedMotion?"REDUCED MOTION: ON":"REDUCED MOTION: OFF",C("#544566"),()=>{});motion.onClick.AddListener(()=>{world.ReducedMotion=!world.ReducedMotion;motion.GetComponentInChildren<Text>().text=world.ReducedMotion?"REDUCED MOTION: ON":"REDUCED MOTION: OFF";});Place(motion.GetComponent<RectTransform>(),0,10,340,40);
-        var scenery=Button(panel.transform,"SHOW / HIDE CITY",C("#544566"),()=>world.ToggleScenery());Place(scenery.GetComponent<RectTransform>(),0,-42,340,40);
-        var close=Button(panel.transform,"DONE",C("#69a747"),()=>CloseModal());Place(close.GetComponent<RectTransform>(),0,-110,180,44);
+        var panel=Modal(new Vector2(440,450));
+        var title=Label(panel.transform,"BOARD SETTINGS",22);Place(title.rectTransform,0,180,400,36);
+        var cameraTitle=Label(panel.transform,"CAMERA VIEW",13);Place(cameraTitle.rectTransform,0,133,340,24);
+        var overview=Button(panel.transform,world.Follow?"OVERVIEW":"OVERVIEW  •",C("#544566"),()=>{});
+        var follow=Button(panel.transform,world.Follow?"FOLLOW  •":"FOLLOW",C("#544566"),()=>{});
+        overview.onClick.AddListener(()=>{world.SetOverview(true);overview.GetComponentInChildren<Text>().text="OVERVIEW  •";follow.GetComponentInChildren<Text>().text="FOLLOW";});
+        follow.onClick.AddListener(()=>{world.SetOverview(false);overview.GetComponentInChildren<Text>().text="OVERVIEW";follow.GetComponentInChildren<Text>().text="FOLLOW  •";});
+        Place(overview.GetComponent<RectTransform>(),-88,94,164,44);Place(follow.GetComponent<RectTransform>(),88,94,164,44);
+        var sound=Button(panel.transform,world.Sound?"SOUND: ON":"SOUND: OFF",C("#544566"),()=>{});sound.onClick.AddListener(()=>{world.Sound=!world.Sound;sound.GetComponentInChildren<Text>().text=world.Sound?"SOUND: ON":"SOUND: OFF";});Place(sound.GetComponent<RectTransform>(),0,30,340,40);
+        var motion=Button(panel.transform,world.ReducedMotion?"REDUCED MOTION: ON":"REDUCED MOTION: OFF",C("#544566"),()=>{});motion.onClick.AddListener(()=>{world.ReducedMotion=!world.ReducedMotion;motion.GetComponentInChildren<Text>().text=world.ReducedMotion?"REDUCED MOTION: ON":"REDUCED MOTION: OFF";});Place(motion.GetComponent<RectTransform>(),0,-22,340,40);
+        var scenery=Button(panel.transform,"SHOW / HIDE CITY",C("#544566"),()=>world.ToggleScenery());Place(scenery.GetComponent<RectTransform>(),0,-74,340,40);
+        var close=Button(panel.transform,"DONE",C("#69a747"),()=>CloseModal());Place(close.GetComponent<RectTransform>(),0,-160,180,44);
     }
     GameObject Modal(Vector2 size)
     {

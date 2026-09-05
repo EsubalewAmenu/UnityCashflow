@@ -22,3 +22,6 @@ Cashflow > Review Board runs the editor checks and writes captures/results to wo
 This is an original procedural 3D presentation based on the supplied video. Physical-device performance and touch behavior have not been tested on Android hardware.
 
 The ZIP contains the complete Assets, Packages and ProjectSettings folders plus this README; generated Library and temporary files are excluded. The original project already contains the changes; no archive import is required on this computer.
+
+## Environment update
+The board now has a track-shaped physical base and narrow gold rim, removing the old filled rectangular corners. Slate replaces the green surround. The flat green ground and sphere trees have been replaced by a batched city plaza with stone paving, sidewalks, crosswalks, lane markings, pastel storefronts, striped awnings, windows, roof details, cars, lamps and benches. BoardEnvironment builds the scenery; BoardPlateGraphic supplies the curved perimeter. The four-resolution and one-/two-dice regression checks passed after these changes.

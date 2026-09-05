@@ -8,8 +8,6 @@ using UnityEngine.UI;
 public sealed class BoardWorld : MonoBehaviour
 {
     public Camera View { get; private set; }
-    public Camera Overview { get; private set; }
-    public RenderTexture OverviewTexture { get; private set; }
     public Transform Pawn { get; private set; }
     public int DiceTotal { get; private set; }
     public bool Follow { get; private set; }
@@ -65,10 +63,6 @@ public sealed class BoardWorld : MonoBehaviour
         Box("Stone foundation",new Vector3(0,-.4f,0),new Vector3(70,.4f,70),Mat("#b6b0c1"));
         BuildScenery(); BuildDecks(); BuildPawn();
         for(int i=0;i<2;i++) { var d=new GameObject("Die "+(i+1)).AddComponent<BoardDie>(); d.transform.SetParent(transform,false); d.Build(Mat("#fff9e9",0,.32f),Mat("#20283a",.1f,.2f)); d.transform.position=new Vector3((i==0?-.38f:.38f),.4f,-.3f); dice.Add(d); }
-        Overview=new GameObject("Live overview camera").AddComponent<Camera>(); Overview.transform.SetParent(transform,false);
-        Overview.transform.position=new Vector3(0,14,0); Overview.transform.rotation=Quaternion.Euler(90,0,0);
-        Overview.orthographic=true; Overview.orthographicSize=2.9f; Overview.clearFlags=CameraClearFlags.SolidColor; Overview.backgroundColor=Hex("#ded4c4");
-        OverviewTexture=new RenderTexture(640,320,16){name="Live board overview",antiAliasing=2}; Overview.targetTexture=OverviewTexture;
         audioSource=gameObject.AddComponent<AudioSource>(); audioSource.spatialBlend=0;
         clack=AudioClip.Create("Dice clack",2205,1,22050,false); var samples=new float[2205];
         for(int i=0;i<samples.Length;i++)samples[i]=Mathf.Sin(i*1.17f)*Mathf.Exp(-i/180f)*.25f; clack.SetData(samples,0);
@@ -153,16 +147,30 @@ public sealed class BoardWorld : MonoBehaviour
     void LateUpdate(){if(View!=null)UpdateCamera(ReducedMotion);}
     void UpdateCamera(bool instant)
     {
-        Rect safe=Screen.safeArea;
-        if(safe.width<=0||safe.height<=0||safe.xMax>Screen.width||safe.yMax>Screen.height)safe=new Rect(0,0,Screen.width,Screen.height);
-        View.rect=new Rect(safe.x/Screen.width,safe.y/Screen.height+.14f*safe.height/Screen.height,safe.width/Screen.width,.86f*safe.height/Screen.height);
+        // Render scenery edge to edge; only interactive HUD elements use the safe area.
+        View.rect=new Rect(0,.14f,1,.86f);
         Vector3 target=Busy?Vector3.zero:Follow?Pawn.position+new Vector3(0,0,.35f):Vector3.zero;
         focus=instant?target:Vector3.Lerp(focus,target,1-Mathf.Exp(-Time.unscaledDeltaTime*5));
-        float distance=Busy?6.8f:Follow?5.8f:Mathf.Max(9.7f,6.4f/(Mathf.Tan(View.fieldOfView*Mathf.Deg2Rad/2)*View.aspect));
+        float distance=Busy?6.8f:Follow?5.8f:OverviewDistance();
         Vector3 offset=Quaternion.Euler(pitch,yaw,0)*new Vector3(0,0,-distance*zoom);
         Vector3 desired=focus+offset;
         View.transform.position=instant?desired:Vector3.Lerp(View.transform.position,desired,1-Mathf.Exp(-Time.unscaledDeltaTime*6));
         View.transform.LookAt(focus);
+    }
+    float OverviewDistance()
+    {
+        // Fit the actual curved perimeter in perspective at any aspect and orbit angle.
+        float tanV=Mathf.Tan(View.fieldOfView*Mathf.Deg2Rad/2)*.94f;
+        float tanH=tanV*View.aspect;
+        Quaternion inverse=Quaternion.Inverse(Quaternion.Euler(pitch,yaw,0));
+        float distance=0;
+        for(int i=0;i<96;i++)
+        {
+            Vector2 edge=BoardTrackGenerator.Point(i/96f,267);
+            Vector3 p=inverse*new Vector3(edge.x*.01f,.16f,edge.y*.01f);
+            distance=Mathf.Max(distance,Mathf.Abs(p.x)/tanH-p.z,Mathf.Abs(p.y)/tanV-p.z);
+        }
+        return distance;
     }
     public void PlacePawn(int p,bool fast){Pawn.position=TrackPoint(p,fast);}
     public IEnumerator MovePawn(int from,int steps,bool fast)
@@ -198,7 +206,6 @@ public sealed class BoardWorld : MonoBehaviour
     void OnDestroy()
     {
         foreach(var m in materials)if(m!=null)Destroy(m);
-        if(OverviewTexture!=null){OverviewTexture.Release();Destroy(OverviewTexture);}
         if(clack!=null)Destroy(clack);
         if(boardBase!=null)Destroy(boardBase);
     }

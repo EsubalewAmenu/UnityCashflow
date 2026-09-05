@@ -32,3 +32,5 @@ sysinfo.txt
 # OS files
 .DS_Store
 Thumbs.db
+outputs/*
+outputs/3d/*

@@ -13,7 +13,7 @@ public static class BoardReview
     static double next;
     static int step;
     static int retries;
-    static readonly int[,] sizes = { {1280,720}, {1920,1080}, {2340,1080}, {1024,768} };
+    static readonly int[,] sizes = { {1280,720}, {1920,1080}, {2532,1170}, {2340,1080}, {1024,768} };
     static string Folder => Path.GetFullPath("work/3d-review");
     static BoardReview() { EditorApplication.update += Tick; }
     [MenuItem("Cashflow/Review Board")]
@@ -37,7 +37,7 @@ public static class BoardReview
         {
             step = SessionState.GetInt("BoardReviewStep",0);
             if (step == 0) { SceneManager.LoadScene("GameBoard"); }
-            else if (step <= 8)
+            else if (step <= sizes.GetLength(0)*2)
             {
                 int i=(step-1)/2;
                 if (step%2==1) SetSize(sizes[i,0],sizes[i,1]);
@@ -49,6 +49,15 @@ public static class BoardReview
                         SetSize(sizes[i,0],sizes[i,1]); next=EditorApplication.timeSinceStartup+3; return;
                     }
                     retries=0;
+                    var camera=UnityEngine.Object.FindObjectOfType<BoardWorld>().View;
+                    if(camera.rect.x!=0||camera.rect.width!=1)throw new Exception("Camera does not fill screen width");
+                    for(int sample=0;sample<96;sample++)
+                    {
+                        var edge=BoardTrackGenerator.Point(sample/96f,267);
+                        var projected=camera.WorldToViewportPoint(new Vector3(edge.x*.01f,.16f,edge.y*.01f));
+                        if(projected.z<=0||projected.x<0||projected.x>1||projected.y<0||projected.y>1)throw new Exception("Board clipped at "+Screen.width+"x"+Screen.height);
+                    }
+
                     foreach(var scaler in UnityEngine.Object.FindObjectsOfType<UnityEngine.UI.CanvasScaler>())scaler.SendMessage("Update");
                     Canvas.ForceUpdateCanvases();
                     UnityEngine.Object.FindObjectOfType<SafeBoardLayout>().SendMessage("LateUpdate");
@@ -73,11 +82,11 @@ public static class BoardReview
                     File.AppendAllText(Path.Combine(Folder,"results.txt"),"PASS: "+Screen.width+"x"+Screen.height+"; 48 segments, shared seams, tile hit targets, HUD bounds.\n");
                 }
             }
-            else if(step==9)
+            else if(step==sizes.GetLength(0)*2+1)
             {
                 SetSize(1920,1080);UnityEngine.Object.FindObjectOfType<BoardWorld>().SetOverview(false);
             }
-            else if(step==10)
+            else if(step==sizes.GetLength(0)*2+2)
             {
                 ScreenCapture.CaptureScreenshot(Path.Combine(Folder,"follow-camera.png"));
                 var game=UnityEngine.Object.FindObjectOfType<CashflowGame>();
@@ -89,14 +98,14 @@ public static class BoardReview
                 if((bool)typeof(CashflowGame).GetField("rolling",flags).GetValue(game)){if(++retries>12)throw new Exception("Roll did not finish");next=EditorApplication.timeSinceStartup+2;return;}
                 int position=(int)typeof(CashflowGame).GetField("position",flags).GetValue(game);
                 var world=UnityEngine.Object.FindObjectOfType<BoardWorld>();
-                if(world.DiceTotal<(step==11?1:2)||world.DiceTotal>(step==11?6:12))throw new Exception("Dice result invalid");
-                if(world.Overview.targetTexture==null||!world.Overview.targetTexture.IsCreated())throw new Exception("Live minimap unavailable");
+                if(world.DiceTotal<(step==sizes.GetLength(0)*2+3?1:2)||world.DiceTotal>(step==sizes.GetLength(0)*2+3?6:12))throw new Exception("Dice result invalid");
+                if(GameObject.Find("Live minimap")!=null)throw new Exception("Minimap was not removed");
                 int sum=0;foreach(var die in UnityEngine.Object.FindObjectsOfType<BoardDie>())sum+=die.Value;
                 if(sum!=world.DiceTotal)throw new Exception("Visible dice do not match gameplay total");
                 if(Vector3.Distance(world.Pawn.position,BoardWorld.TrackPoint(position,false))>.01f)throw new Exception("3D pawn does not match landed space");
-                if(step==11)
+                if(step==sizes.GetLength(0)*2+3)
                 {
-                    File.AppendAllText(Path.Combine(Folder,"results.txt"),"PASS: single physical die, animated pawn landing, follow camera and live minimap.\n");
+                    File.AppendAllText(Path.Combine(Folder,"results.txt"),"PASS: single physical die, animated pawn landing, follow camera; minimap removed.\n");
                     typeof(CashflowGame).GetMethod("ShowBoardSettings",flags).Invoke(game,null);
                     typeof(CashflowGame).GetMethod("Roll",flags).Invoke(game,null);
                     if((bool)typeof(CashflowGame).GetField("rolling",flags).GetValue(game))throw new Exception("Modal did not block rolling");
