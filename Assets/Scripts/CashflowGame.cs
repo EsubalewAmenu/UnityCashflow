@@ -9,7 +9,7 @@ using Random = UnityEngine.Random;
 
 // Financial controller and screen HUD for the 3D Cashflow board.
 // It builds its playable UI at runtime; no manually wired scene is required.
-public class CashflowGame : MonoBehaviour
+public partial class CashflowGame : MonoBehaviour
 {
     [Serializable] public class Profession { public string name; public int salary, savings, taxes, mortgagePay, schoolPay, carPay, cardPay, retailPay, other, childPay; }
     [Serializable] public class Deal { public string title; public int down, flow; public Deal(string t, int d, int f) { title=t; down=d; flow=f; } }
@@ -25,7 +25,8 @@ public class CashflowGame : MonoBehaviour
     readonly int[] dreamGoals = { 125000, 175000, 220000, 140000, 130000, 250000, 90000, 200000 };
     readonly string[] ratTiles = { "OPPORTUNITY", "DOODAD", "OPPORTUNITY", "CHARITY", "OPPORTUNITY", "PAYDAY", "OPPORTUNITY", "MARKET", "OPPORTUNITY", "DOODAD", "OPPORTUNITY", "BABY", "OPPORTUNITY", "PAYDAY", "OPPORTUNITY", "MARKET", "OPPORTUNITY", "DOODAD", "OPPORTUNITY", "DOWNSIZED", "OPPORTUNITY", "PAYDAY", "OPPORTUNITY", "MARKET" };
     readonly string[] fastTiles = { "CASHFLOW DAY", "BIO-TECH +25K", "DREAM", "PIZZA +18K", "TAX AUDIT", "DREAM", "CASHFLOW DAY", "GOLF +35K", "DREAM", "CLOUD +40K", "LAWSUIT", "DREAM", "CASHFLOW DAY", "CAR WASH +15K", "DREAM", "EV +30K", "DIVORCE", "DREAM", "CASHFLOW DAY", "CARGO +28K", "DREAM", "HOTEL +22K", "CORRECTION", "DREAM" };
-    readonly Deal[] deals = { new Deal("2/1 Condo", 4000, 220), new Deal("3/2 House", 5000, 250), new Deal("Vending Route", 4000, 350), new Deal("Micro SaaS", 3000, 400), new Deal("4-Plex", 10000, 800), new Deal("Pizza Franchise", 35000, 3000) };
+    readonly Deal[] smallDeals = { new Deal("2/1 Condo", 4000, 220), new Deal("3/2 House", 5000, 250), new Deal("Vending Route", 4000, 350), new Deal("Micro SaaS", 3000, 400) };
+    readonly Deal[] bigDeals = { new Deal("4-Plex", 10000, 800), new Deal("Pizza Franchise", 35000, 3000) };
 
     Profession profession; string dream; int selectedDream; int cash, passive, children, position, fastPosition, fastFlow; bool fastTrack, charity; int skipTurns;
     BoardWorld world; Button rollButton; bool rolling; GameObject modal;
@@ -351,11 +352,10 @@ public class CashflowGame : MonoBehaviour
     void ShowTileDetails(string title, bool outer) { if(rolling||world.Dragged)return; ShowEventPanel((outer?"FAST TRACK":"RAT RACE")+" • "+title,TileDescription(title)+"\n\nClick Roll to land here and resolve the event.",outer?C("#075e50"):TileColor(title)); }
     void ShowEventPanel(string title, string details, Color color)
     {
-        var shade=Modal(new Vector2(470,255));
-        var bar=Panel(shade.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(470,45),color); Place(bar.GetComponent<RectTransform>(),0,105,470,45);
-        var heading=Label(bar.transform,title,18); heading.fontStyle=FontStyle.Bold; Stretch(heading.rectTransform);
-        var copy=Label(shade.transform,details,17); copy.color=C("#d4ddea"); Place(copy.rectTransform,0,10,410,115);
-        var ok=Button(shade.transform,"CONTINUE",C("#079d70"),()=>CloseModal()); Place(ok.GetComponent<RectTransform>(),0,-91,170,40); SetButtonText(ok,Color.white,16);
+        var shade=CardShell("BOARD EVENT",title,color,new Vector2(700,440));
+        var copy=Label(shade.transform,details,23);copy.color=C("#40394c");Place(copy.rectTransform,0,-5,610,170);
+        var ok=Button(shade.transform,"CONTINUE",color,CloseModal);Place(ok.GetComponent<RectTransform>(),0,-165,260,54);SetButtonText(ok,Color.white,18);
+
     }
     string ShortTitle(string title)
     {
@@ -387,7 +387,7 @@ public class CashflowGame : MonoBehaviour
     void Land(string tile)
     {
         if(tile=="PAYDAY"){ Payday(); ShowEventPanel("PAYDAY","Your monthly cashflow was added to cash.\n\nCollected: "+Money(Income()-Expenses()),C("#a16207")); return; }
-        if(tile=="OPPORTUNITY"){ var d=deals[Random.Range(0,deals.Length)]; OfferDeal(d); return; }
+        if(tile=="OPPORTUNITY"){ ShowDealChoice(); return; }
         if(tile=="DOODAD"){ int cost=Random.Range(100,1001); cash-=cost; Log("Doodad: paid "+Money(cost)); ShowEventPanel("DOODAD","Unexpected expense paid.\n\nCost: "+Money(cost),C("#b91c1c")); return; }
         if(tile=="CHARITY"){ int cost=Mathf.Max(100,Income()/10); cash-=cost; charity=true; Log("Charity: paid "+Money(cost)+"; next roll uses two dice."); ShowEventPanel("CHARITY","You donated "+Money(cost)+".\n\nYour next roll uses two dice!",C("#b45309")); return; }
         if(tile=="BABY"){ children=Mathf.Min(3,children+1); Log("A new baby joins the family. Expenses increased."); ShowEventPanel("BABY","Your family grew.\n\nMonthly expenses increased by "+Money(profession.childPay)+".",C("#be185d")); return; }
@@ -401,7 +401,6 @@ public class CashflowGame : MonoBehaviour
             else{int lost=cash-cash/2;cash=Mathf.Max(0,cash/2);Log("Fast Track hazard reduced cash.");ShowEventPanel("FAST TRACK HAZARD","A setback reduced your available cash.\n\nLost: "+Money(lost),C("#b91c1c"));}
         }
     }
-    void OfferDeal(Deal d){if(cash<d.down){Log("Opportunity: "+d.title+" needs "+Money(d.down)+" — insufficient cash.");return;}var popup=Modal(new Vector2(440,260));var text=Label(popup.transform,"OPPORTUNITY\n"+d.title+"\nDown payment "+Money(d.down)+" • +"+Money(d.flow)+"/month",20);Place(text.rectTransform,0,60,400,145);var buy=Button(popup.transform,"BUY",C("#16a34a"),()=>{cash-=d.down;passive+=d.flow;CloseModal();Log("Bought "+d.title+". Passive income +"+Money(d.flow));CheckEscape();Refresh();});Place(buy.GetComponent<RectTransform>(),-100,-80,130,42);var pass=Button(popup.transform,"PASS",C("#64748b"),()=>{Destroy(popup);Log("Passed on "+d.title);});Place(pass.GetComponent<RectTransform>(),100,-80,130,42);}
     int Expenses(){return profession.taxes+profession.mortgagePay+profession.schoolPay+profession.carPay+profession.cardPay+profession.retailPay+profession.other+children*profession.childPay;}
     int Income(){return (fastTrack?0:profession.salary)+passive;}
     void Payday(){int amount=Income()-Expenses();cash+=amount;Log("PAYDAY: collected "+Money(amount));}

@@ -28,3 +28,6 @@ The board now has a track-shaped physical base and narrow gold rim, removing the
 
 ## Mobile controls and framing
 Removed the right-side zoom/rotate controls and the minimap camera/render texture. Settings now lives in the bottom bar; its Camera View section switches between Overview and Follow. The scene renders across the full display width while the HUD retains safe-area padding. Perspective framing fits the curved board perimeter dynamically for different aspect ratios. Editor review includes 2532x1170 (iPhone 12) and 2340x1080 (Pixel 5), plus 1280x720, 1920x1080 and 1024x768. These are editor resolution checks, not physical-device tests.
+
+## Deal cards
+Landing on Deal now offers separate Small Deal and Big Deal decks using the existing investment amounts. Cards show down payment, income, available cash, and affordability; Buy updates balances exactly once and Pass closes the modal correctly. A shared cream-and-gold presentation improves event cards too. Deals flip from an opportunity card back with gold sparkles; purchases show a brief celebration. Reduced Motion uses a short fade. Deal-flow tests passed alongside the five-resolution board regression.

@@ -1,0 +1,1 @@
+PASS: both deck choices, small purchase, duplicate click guard, big deal pass, insufficient cash, modal cleanup, reduced-motion event reveal.

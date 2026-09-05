@@ -151,6 +151,6 @@ public static class BoardReview
         int count=(int)group.GetType().GetMethod("GetTotalCount").Invoke(group,null);
         var view=EditorWindow.GetWindow(assembly.GetType("UnityEditor.GameView"));
         view.GetType().GetProperty("selectedSizeIndex",BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Instance).SetValue(view,count-1);
-        view.Repaint();
+        view.Focus();view.Repaint();
     }
 }
