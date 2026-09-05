@@ -240,7 +240,7 @@ public class CashflowGame : MonoBehaviour
         foreach(var dot in new[]{new Vector2(-9,-9),new Vector2(9,-9),Vector2.zero,new Vector2(-9,9),new Vector2(9,9)})
         {
             var pip=new GameObject("Pip",typeof(RectTransform),typeof(Image)); pip.transform.SetParent(diceArt.transform,false);
-            pip.GetComponent<Image>().sprite=CircleSprite(); pip.GetComponent<Image>().color=C("#254e43"); pip.GetComponent<Image>().raycastTarget=false;
+            pip.GetComponent<Image>().sprite=CircleSprite(); pip.GetComponent<Image>().color=C("#39485d"); pip.GetComponent<Image>().raycastTarget=false;
             Place(pip.GetComponent<RectTransform>(),dot.x,dot.y,6,6);
         }
         var rollLabel=roll.GetComponentInChildren<Text>(); Place(rollLabel.rectTransform,22,0,165,48);
@@ -278,9 +278,8 @@ public class CashflowGame : MonoBehaviour
         foreach(var decoration in boardDecorations) {decoration.SetActive(false);Destroy(decoration);} boardDecorations.Clear();
 
 
-        BoardLayer("Board Shadow",0,-5,1190,530,C("#102333"));
         BoardLayer("Board Frame",0,0,1180,520,C("#edd38c"));
-        BoardLayer("Park Border",0,0,1168,508,C("#254e43"));
+        BoardLayer("Slate Board Surround",0,0,1168,508,C("#39485d"));
         BoardLayer("Gold Mat Trim",0,0,662,186,C("#e8bd55"));
         BoardLayer("Cashflow Center",0,0,652,176,C("#281440"));
         CreateTrack(fastTiles,138,70,true);
@@ -290,7 +289,13 @@ public class CashflowGame : MonoBehaviour
     }
     GameObject BoardLayer(string name,float x,float y,float width,float height,Color color)
     {
-        if(name=="Board Frame"||name=="Board Shadow"||name=="Park Border"||name=="Gold Mat Trim"||name=="Cashflow Center")width+=2*(BoardTrackGenerator.Straight-328);
+        if(name=="Board Frame"||name=="Slate Board Surround")
+        {
+            var plate=new GameObject(name,typeof(RectTransform),typeof(CanvasRenderer),typeof(BoardPlateGraphic));plate.transform.SetParent(board,false);
+            var graphic=plate.GetComponent<BoardPlateGraphic>();graphic.radius=name=="Board Frame"?265:261;graphic.color=color;graphic.raycastTarget=false;
+            Place(graphic.rectTransform,x,y,1280,540);boardDecorations.Add(plate);return plate;
+        }
+        if(name=="Board Frame"||name=="Board Shadow"||name=="Slate Board Surround"||name=="Gold Mat Trim"||name=="Cashflow Center")width+=2*(BoardTrackGenerator.Straight-328);
         var layer=new GameObject(name,typeof(RectTransform),typeof(Image)); layer.transform.SetParent(board,false); layer.transform.SetAsLastSibling();
         var image=layer.GetComponent<Image>(); image.sprite=RoundedSprite(); image.type=Image.Type.Sliced; image.color=color; image.raycastTarget=false; Place(layer.GetComponent<RectTransform>(),x,y,width,height); boardDecorations.Add(layer); return layer;
     }

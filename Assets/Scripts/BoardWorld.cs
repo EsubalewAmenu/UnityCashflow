@@ -27,6 +27,7 @@ public sealed class BoardWorld : MonoBehaviour
     bool dragging, moved;
     AudioSource audioSource;
     AudioClip clack;
+    Mesh boardBase;
 
     public static Vector3 TrackPoint(int index, bool fast)
     {
@@ -48,8 +49,8 @@ public sealed class BoardWorld : MonoBehaviour
         QualitySettings.antiAliasing=4;
         if(View.GetComponent<AudioListener>()==null)View.gameObject.AddComponent<AudioListener>();
         var sunlight=new GameObject("Soft afternoon light").AddComponent<Light>(); sunlight.transform.SetParent(transform,false);
-        sunlight.type=LightType.Directional; sunlight.intensity=1.15f; sunlight.color=new Color(1,.95f,.85f);
-        sunlight.shadows=LightShadows.Soft; sunlight.shadowStrength=.4f; sunlight.transform.rotation=Quaternion.Euler(48,-35,0);
+        sunlight.type=LightType.Directional; sunlight.intensity=1.0f; sunlight.color=new Color(1,.95f,.85f);
+        sunlight.shadows=LightShadows.Soft; sunlight.shadowStrength=.3f; sunlight.transform.rotation=Quaternion.Euler(48,-35,0);
         RenderSettings.ambientLight=new Color(.62f,.67f,.73f);
         QualitySettings.shadows=ShadowQuality.All; QualitySettings.shadowDistance=40;
         var surface=new GameObject("Printed board surface",typeof(RectTransform),typeof(Canvas),typeof(GraphicRaycaster));
@@ -58,13 +59,15 @@ public sealed class BoardWorld : MonoBehaviour
         var rect=surface.GetComponent<RectTransform>(); rect.sizeDelta=new Vector2(1280,540);
         rect.position=new Vector3(0,.151f,0); rect.rotation=Quaternion.Euler(90,0,0); rect.localScale=Vector3.one*.01f;
         face.SetParent(rect,false); face.anchoredPosition=Vector2.zero; face.localScale=Vector3.one;
-        Box("Board edge",Vector3.zero,new Vector3(11.85f,.28f,5.25f),Mat("#302746",.2f,.4f));
-        Box("Table",new Vector3(0,-.35f,0),new Vector3(30,.4f,22),Mat("#8fab9a"));
+        var edge=Box("Board edge",Vector3.zero,new Vector3(11.91f,.28f,5.34f),Mat("#302746",.2f,.4f));
+        edge.transform.localScale=Vector3.one;edge.GetComponent<BoxCollider>().size=new Vector3(11.91f,.28f,5.34f);
+        boardBase=BoardPlateGraphic.Solid(267,.28f);edge.GetComponent<MeshFilter>().sharedMesh=boardBase;
+        Box("Stone foundation",new Vector3(0,-.4f,0),new Vector3(70,.4f,70),Mat("#b6b0c1"));
         BuildScenery(); BuildDecks(); BuildPawn();
         for(int i=0;i<2;i++) { var d=new GameObject("Die "+(i+1)).AddComponent<BoardDie>(); d.transform.SetParent(transform,false); d.Build(Mat("#fff9e9",0,.32f),Mat("#20283a",.1f,.2f)); d.transform.position=new Vector3((i==0?-.38f:.38f),.4f,-.3f); dice.Add(d); }
         Overview=new GameObject("Live overview camera").AddComponent<Camera>(); Overview.transform.SetParent(transform,false);
         Overview.transform.position=new Vector3(0,14,0); Overview.transform.rotation=Quaternion.Euler(90,0,0);
-        Overview.orthographic=true; Overview.orthographicSize=2.9f; Overview.clearFlags=CameraClearFlags.SolidColor; Overview.backgroundColor=Hex("#6e9d78");
+        Overview.orthographic=true; Overview.orthographicSize=2.9f; Overview.clearFlags=CameraClearFlags.SolidColor; Overview.backgroundColor=Hex("#ded4c4");
         OverviewTexture=new RenderTexture(640,320,16){name="Live board overview",antiAliasing=2}; Overview.targetTexture=OverviewTexture;
         audioSource=gameObject.AddComponent<AudioSource>(); audioSource.spatialBlend=0;
         clack=AudioClip.Create("Dice clack",2205,1,22050,false); var samples=new float[2205];
@@ -115,17 +118,8 @@ public sealed class BoardWorld : MonoBehaviour
     }
     void BuildScenery()
     {
-        scenery=new GameObject("City surroundings").transform;scenery.SetParent(transform,false);
-        var road=Mat("#72828a");var green=Mat("#579a61");var wall=Mat("#d9dfc8");var roof=Mat("#ca8566");
-        Shape("North avenue",PrimitiveType.Cube,scenery,new Vector3(0,-.12f,4.1f),new Vector3(22,.03f,.7f),road);
-        Shape("South avenue",PrimitiveType.Cube,scenery,new Vector3(0,-.12f,-4.1f),new Vector3(22,.03f,.7f),road);
-        for(int i=0;i<14;i++)
-        {
-            float x=-9+i*1.4f,z=i%2==0?5.5f:-5.5f;
-            Shape("Townhouse",PrimitiveType.Cube,scenery,new Vector3(x,.35f,z),new Vector3(.8f,1+(i%3)*.2f,.8f),wall);
-            Shape("Roof",PrimitiveType.Cube,scenery,new Vector3(x,.9f+(i%3)*.1f,z),new Vector3(.9f,.12f,.9f),roof);
-            Shape("Tree",PrimitiveType.Sphere,scenery,new Vector3(x+.6f,.4f,z-.6f),new Vector3(.55f,.8f,.55f),green);
-        }
+        scenery=new GameObject("City plaza").transform;scenery.SetParent(transform,false);
+        scenery.gameObject.AddComponent<BoardEnvironment>().Build();
     }
     public void ApplyPrint(Transform board){if(boardInk==null){boardInk=new Material(Shader.Find("Cashflow/Printed Board"));materials.Add(boardInk);}foreach(var g in board.GetComponentsInChildren<Graphic>())g.material=g is Text?null:boardInk;}
     public void ToggleScenery(){scenery.gameObject.SetActive(!scenery.gameObject.activeSelf);}
@@ -206,5 +200,6 @@ public sealed class BoardWorld : MonoBehaviour
         foreach(var m in materials)if(m!=null)Destroy(m);
         if(OverviewTexture!=null){OverviewTexture.Release();Destroy(OverviewTexture);}
         if(clack!=null)Destroy(clack);
+        if(boardBase!=null)Destroy(boardBase);
     }
 }
