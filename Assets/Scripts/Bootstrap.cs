@@ -1,13 +1,28 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 
 public static class Bootstrap
 {
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void StartCashflow()
     {
-        // The UI uses Screen Space Overlay, but Unity's Game view still expects
-        // an enabled camera in an otherwise empty scene.
+        if (Object.FindObjectOfType<CashflowSceneRouter>() != null) return;
+        var host = new GameObject("Cashflow Scene Router");
+        Object.DontDestroyOnLoad(host);
+        host.AddComponent<CashflowSceneRouter>().Open(SceneManager.GetActiveScene());
+    }
+}
+
+// Persists across scene loads and starts the matching page controller.
+public class CashflowSceneRouter : MonoBehaviour
+{
+    void Awake() { SceneManager.sceneLoaded += OnSceneLoaded; }
+    void OnDestroy() { SceneManager.sceneLoaded -= OnSceneLoaded; }
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode) { Open(scene); }
+
+    public void Open(Scene scene)
+    {
         if (Camera.main == null)
         {
             var cameraObject = new GameObject("Main Camera");
@@ -18,15 +33,13 @@ public static class Bootstrap
             cameraObject.tag = "MainCamera";
         }
 
-        // Canvas buttons require one EventSystem and input module to receive
-        // mouse/touch clicks in the Game view.
         if (Object.FindObjectOfType<EventSystem>() == null)
-        {
-            var eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
-            Object.DontDestroyOnLoad(eventSystem);
-        }
+            Object.DontDestroyOnLoad(new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule)));
 
         if (Object.FindObjectOfType<CashflowGame>() == null)
-            new GameObject("Cashflow Game").AddComponent<CashflowGame>();
+        {
+            var game = new GameObject("Cashflow Game").AddComponent<CashflowGame>();
+            game.OpenScene(scene.name);
+        }
     }
 }

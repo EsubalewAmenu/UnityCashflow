@@ -6,6 +6,12 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Main.unity
-    guid: 00000000000000000000000000000000
+    path: Assets/Scenes/ProfessionSelection.unity
+    guid: 39ae1a4b133f49efa2cd979ed2400001
+  - enabled: 1
+    path: Assets/Scenes/DreamSelection.unity
+    guid: 39ae1a4b133f49efa2cd979ed2400002
+  - enabled: 1
+    path: Assets/Scenes/GameBoard.unity
+    guid: 39ae1a4b133f49efa2cd979ed2400003
   m_configObjects: {}

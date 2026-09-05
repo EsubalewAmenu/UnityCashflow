@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 
 // Self-contained 2D implementation of the JavaScript Cashflow game.
@@ -28,7 +29,25 @@ public class CashflowGame : MonoBehaviour
     Profession profession; string dream; int selectedDream; int cash, passive, children, position, fastPosition, fastFlow; bool fastTrack, charity; int skipTurns;
     Canvas canvas; Text header, statement, log, cashReadout, flowReadout, modeReadout, hoverCopy; RectTransform board; GameObject token, hoverPanel; Sprite circleSprite; readonly List<Button> tileButtons = new List<Button>();
 
-    void Awake() { BuildCanvas(); ShowSetup(); }
+    void Awake() { BuildCanvas(); }
+    public void OpenScene(string sceneName)
+    {
+        if (sceneName == "ProfessionSelection" || sceneName == "Main") ShowSetup();
+        else if (sceneName == "DreamSelection") ShowDreams();
+        else if (sceneName == "GameBoard") StartGame();
+        else ShowSetup();
+    }
+    void GoToDreamSelection()
+    {
+        PlayerPrefs.SetInt("CashflowProfession", Array.IndexOf(professions, profession));
+        PlayerPrefs.Save();
+        SceneManager.LoadScene("DreamSelection");
+    }
+    void LoadProfessionSelection()
+    {
+        int index = Mathf.Clamp(PlayerPrefs.GetInt("CashflowProfession", 0), 0, professions.Length - 1);
+        profession = professions[index];
+    }
     Font Font() { return Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); }
     Color C(string hex) { ColorUtility.TryParseHtmlString(hex, out var c); return c; }
     Sprite CircleSprite()
@@ -97,7 +116,7 @@ public class CashflowGame : MonoBehaviour
         var debtLeft=Label(detail.transform,"Home Mortgage: $38,000",15,TextAnchor.MiddleLeft); debtLeft.color=C("#9fb0c8"); Place(debtLeft.rectTransform,20,-59,360,25);
         var debtRight=Label(detail.transform,"School Loans: $12,000",15,TextAnchor.MiddleRight); debtRight.color=C("#9fb0c8"); Place(debtRight.rectTransform,350,-59,745,25);
 
-        var next=Button(shell.transform,"Next: Choose Your Dream  →",C("#079d70"),ShowDreams); Place(next.GetComponent<RectTransform>(),0,-262,1135,52); SetButtonText(next,Color.white,19);
+        var next=Button(shell.transform,"Next: Choose Your Dream  →",C("#079d70"),GoToDreamSelection); Place(next.GetComponent<RectTransform>(),0,-262,1135,52); SetButtonText(next,Color.white,19);
     }
 
     void FinancialMetric(Transform parent, float x, string heading, string amount, Color amountColor)
@@ -110,6 +129,8 @@ public class CashflowGame : MonoBehaviour
     void SetButtonText(Button button, Color color, int size) { var text=button.GetComponentInChildren<Text>(); if(text!=null){text.color=color;text.fontSize=size;text.fontStyle=FontStyle.Bold;} }
     void ShowDreams()
     {
+        if (profession == null) LoadProfessionSelection();
+        selectedDream = Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream", selectedDream), 0, dreams.Length - 1);
         if (selectedDream < 0 || selectedDream >= dreams.Length) selectedDream = 0;
         ClearUI();
         var shell = Panel(canvas.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1220,650),C("#080f1d"));
@@ -134,8 +155,8 @@ public class CashflowGame : MonoBehaviour
 
         // Dream carousel
         var carousel=Panel(shell.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1135,178),C("#151e31")); Place(carousel.GetComponent<RectTransform>(),0,10,1135,178);
-        var previous=Button(carousel.transform,"‹",C("#1b2c45"),()=>{selectedDream=(selectedDream+dreams.Length-1)%dreams.Length;ShowDreams();}); Place(previous.GetComponent<RectTransform>(),-500,0,50,50); SetButtonText(previous,C("#cbd5e1"),36);
-        var next=Button(carousel.transform,"›",C("#1b2c45"),()=>{selectedDream=(selectedDream+1)%dreams.Length;ShowDreams();}); Place(next.GetComponent<RectTransform>(),500,0,50,50); SetButtonText(next,C("#cbd5e1"),36);
+        var previous=Button(carousel.transform,"‹",C("#1b2c45"),()=>{selectedDream=(selectedDream+dreams.Length-1)%dreams.Length;PlayerPrefs.SetInt("CashflowDream",selectedDream);ShowDreams();}); Place(previous.GetComponent<RectTransform>(),-500,0,50,50); SetButtonText(previous,C("#cbd5e1"),36);
+        var next=Button(carousel.transform,"›",C("#1b2c45"),()=>{selectedDream=(selectedDream+1)%dreams.Length;PlayerPrefs.SetInt("CashflowDream",selectedDream);ShowDreams();}); Place(next.GetComponent<RectTransform>(),500,0,50,50); SetButtonText(next,C("#cbd5e1"),36);
         var target=Label(carousel.transform,"FAST TRACK TARGET",15); target.color=C("#00d99a"); target.fontStyle=FontStyle.Bold; Place(target.rectTransform,0,52,400,25);
         var dreamName=Label(carousel.transform,dreams[selectedDream],27); dreamName.fontStyle=FontStyle.Bold; Place(dreamName.rectTransform,0,17,760,40);
         var goalBox=Panel(carousel.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(180,38),C("#0d1729")); Place(goalBox.GetComponent<RectTransform>(),0,-25,180,38);
@@ -147,9 +168,9 @@ public class CashflowGame : MonoBehaviour
         var confirmation=Panel(shell.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1135,140),C("#101b2e")); Place(confirmation.GetComponent<RectTransform>(),0,-170,1135,140);
         var player=Label(confirmation.transform,"Player:  Player ("+profession.name+")",17,TextAnchor.MiddleLeft); player.color=C("#d4dbea"); Place(player.rectTransform,20,39,500,28);
         var cashflow=Label(confirmation.transform,(flow>=0?"+":"")+Money(flow)+"/mo",17,TextAnchor.MiddleRight); cashflow.color=C("#00e2a4"); cashflow.fontStyle=FontStyle.Bold; Place(cashflow.rectTransform,420,39,675,28);
-        var start=Button(confirmation.transform,"⊙  START CASHFLOW GAME",C("#079d70"),()=>{dream=dreams[selectedDream];StartGame();}); Place(start.GetComponent<RectTransform>(),0,-25,1095,66); SetButtonText(start,Color.white,23);
+        var start=Button(confirmation.transform,"⊙  START CASHFLOW GAME",C("#079d70"),()=>{PlayerPrefs.SetInt("CashflowDream",selectedDream);PlayerPrefs.Save();SceneManager.LoadScene("GameBoard");}); Place(start.GetComponent<RectTransform>(),0,-25,1095,66); SetButtonText(start,Color.white,23);
     }
-    void StartGame(){ cash=profession.savings; passive=0;children=0;position=0;fastPosition=0;fastFlow=0;fastTrack=false;charity=false;skipTurns=0;BuildGame(); Log("Welcome, "+profession.name+". Roll the dice to begin."); }
+    void StartGame(){ if(profession==null)LoadProfessionSelection(); selectedDream=Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream",0),0,dreams.Length-1); dream=dreams[selectedDream]; cash=profession.savings; passive=0;children=0;position=0;fastPosition=0;fastFlow=0;fastTrack=false;charity=false;skipTurns=0;BuildGame(); Log("Welcome, "+profession.name+". Roll the dice to begin."); }
     void BuildGame()
     {
         ClearUI();
