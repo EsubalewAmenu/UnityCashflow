@@ -190,9 +190,8 @@ public class CashflowGame : MonoBehaviour
         var statement=Button(top.transform,"▤",C("#079d70"),ShowStatement); Place(statement.GetComponent<RectTransform>(),495,0,52,38); SetButtonText(statement,Color.white,22);
         var menu=Button(top.transform,"⋮",C("#26354d"),()=>Log("How to play: roll, invest, grow passive income, then reach your dream.")); Place(menu.GetComponent<RectTransform>(),555,0,42,42); SetButtonText(menu,Color.white,25);
 
-        board=new GameObject("Game Board",typeof(RectTransform),typeof(Image)).GetComponent<RectTransform>(); board.SetParent(canvas.transform,false); board.GetComponent<Image>().color=C("#060c17"); Place(board,0,-22,1095,490);
-        var help=Panel(board,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(495,45),C("#101b2e")); Place(help.GetComponent<RectTransform>(),-292,210,495,45);
-        var helpText=Label(help.transform,"●  Drag to Pan • Pinch/Scroll to Zoom • Tap any tile to inspect",16); helpText.color=C("#b9c5d7"); Stretch(helpText.rectTransform);
+        // The board occupies the complete game area below the persistent header.
+        board=new GameObject("Game Board",typeof(RectTransform),typeof(Image)).GetComponent<RectTransform>(); board.SetParent(canvas.transform,false); board.GetComponent<Image>().color=C("#060c17"); Place(board,0,-37,1280,646);
 
         DrawBoard();
         var roll=Button(board,"♙\nROLL\nTap",C("#079d70"),Roll); roll.GetComponent<Image>().sprite=CircleSprite(); Place(roll.GetComponent<RectTransform>(),0,0,118,118); SetButtonText(roll,Color.white,19);
@@ -201,7 +200,7 @@ public class CashflowGame : MonoBehaviour
         hoverPanel=Panel(board,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(410,47),C("#14213a")); Place(hoverPanel.GetComponent<RectTransform>(),0,-206,410,47); hoverPanel.GetComponent<Image>().raycastTarget=false;
         hoverCopy=Label(hoverPanel.transform,"Hover over a board tile to view its effect",13); hoverCopy.color=C("#d4ddea"); hoverCopy.raycastTarget=false; Stretch(hoverCopy.rectTransform); hoverPanel.SetActive(false);
         // Camera/board controls are decorative but the focus action remains useful.
-        string[] controls={"⊕","⊖","↗","◉"}; for(int i=0;i<controls.Length;i++){int n=i;var control=Button(board,controls[i],n==3?C("#078c6e"):C("#1b2c45"),()=>{if(n==3)MoveToken(); else Log(n==0?"Zoomed in.":n==1?"Zoomed out.":"Full board view." );});Place(control.GetComponent<RectTransform>(),500,55-i*55,46,46);SetButtonText(control,Color.white,25);}
+        string[] controls={"⊕","⊖","↗","◉"}; for(int i=0;i<controls.Length;i++){int n=i;var control=Button(board,controls[i],n==3?C("#078c6e"):C("#1b2c45"),()=>{if(n==3)MoveToken(); else Log(n==0?"Zoomed in.":n==1?"Zoomed out.":"Full board view." );});Place(control.GetComponent<RectTransform>(),580,92-i*55,46,46);SetButtonText(control,Color.white,25);}
         log=Label(canvas.transform,"",15); log.color=C("#b9c5d7"); Place(log.rectTransform,0,-325,1050,26);
         Refresh();
     }
@@ -211,18 +210,12 @@ public class CashflowGame : MonoBehaviour
     {
         foreach(var b in tileButtons) Destroy(b.gameObject); tileButtons.Clear();
         // A large outer Fast Track is always visible; it becomes the active route after escape.
-        var fastLabel=Label(board,"T H E   F A S T   T R A C K",12); fastLabel.color=C("#00a8d7"); fastLabel.fontStyle=FontStyle.Bold; Place(fastLabel.rectTransform,0,168,300,22);
-        CreateTrack(fastTiles, 500, 205, 80, 36, true);
-        var ratLabel=Label(board,"CASHFLOW 101  •  RAT RACE",14); ratLabel.color=C("#c98400"); ratLabel.fontStyle=FontStyle.Bold; Place(ratLabel.rectTransform,0,117,350,24);
-        CreateTrack(ratTiles, 265, 132, 62, 34, false);
-        var innerGlow=new GameObject("Rat Race Center",typeof(RectTransform),typeof(Image)); innerGlow.transform.SetParent(board,false); innerGlow.transform.SetAsFirstSibling(); var glow=innerGlow.GetComponent<Image>(); glow.sprite=CircleSprite(); glow.color=C("#0b1727"); glow.raycastTarget=false; Place(innerGlow.GetComponent<RectTransform>(),0,0,350,220);
+        var fastLabel=Label(board,"T H E   F A S T   T R A C K",13); fastLabel.color=C("#00a8d7"); fastLabel.fontStyle=FontStyle.Bold; Place(fastLabel.rectTransform,0,220,300,22);
+        CreateTrack(fastTiles, 565, 270, 84, 38, true);
+        var ratLabel=Label(board,"CASHFLOW 101  •  RAT RACE",15); ratLabel.color=C("#c98400"); ratLabel.fontStyle=FontStyle.Bold; Place(ratLabel.rectTransform,0,150,350,24);
+        CreateTrack(ratTiles, 330, 172, 68, 36, false);
+        var innerGlow=new GameObject("Rat Race Center",typeof(RectTransform),typeof(Image)); innerGlow.transform.SetParent(board,false); innerGlow.transform.SetAsFirstSibling(); var glow=innerGlow.GetComponent<Image>(); glow.sprite=CircleSprite(); glow.color=C("#0b1727"); glow.raycastTarget=false; Place(innerGlow.GetComponent<RectTransform>(),0,0,430,285);
         var innerOutline=innerGlow.AddComponent<Outline>(); innerOutline.effectColor=C("#c98400"); innerOutline.effectDistance=new Vector2(2,2);
-        CreateDeck(board,-420,35,"▾ SMALL DEALS","Cost < $20,000",C("#075e50"));
-        CreateDeck(board,-420,-105,"▴ BIG DEALS","Cost ≥ $20,000",C("#075e50"));
-        CreateDeck(board,420,35,"▤ THE MARKET","Offers & Splits",C("#5b2185"));
-        CreateDeck(board,420,-105,"♥ DOODADS","Consumer Debt",C("#7f1d36"));
-        var guide=Panel(board,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(125,114),C("#0f2230")); Place(guide.GetComponent<RectTransform>(),-420,-28,125,114);
-        var guideText=Label(guide.transform,"▼ RAT RACE GUIDE\n\n▶ Payday: Earn $\n▶ Deal: Real Estate\n▶ Charity: Roll 2 Dice\n\nESCAPE TO FAST TRACK",9,TextAnchor.UpperLeft); guideText.color=C("#dce6ef"); Stretch(guideText.rectTransform);
         token=new GameObject("Player Token",typeof(RectTransform),typeof(Image)); token.transform.SetParent(board,false); token.GetComponent<Image>().sprite=CircleSprite(); token.GetComponent<Image>().color=C("#facc15"); token.GetComponent<RectTransform>().sizeDelta=new Vector2(26,26); var tokenOutline=token.AddComponent<Outline>(); tokenOutline.effectColor=Color.white; tokenOutline.effectDistance=new Vector2(2,2); MoveToken();
     }
     void CreateTrack(string[] tiles, float rx, float ry, float w, float h, bool outer)
@@ -304,7 +297,7 @@ public class CashflowGame : MonoBehaviour
         var count=Label(deck.transform,"◉  20 CARDS",7); count.color=C("#9fb0c8"); Place(count.rectTransform,0,-22,100,14);
     }
     Color TileColor(string s){if(s.Contains("PAYDAY")||s.Contains("CASHFLOW"))return C("#a16207");if(s.Contains("OPPORTUNITY")||s.Contains("+"))return C("#047857");if(s.Contains("DOODAD")||s.Contains("AUDIT")||s.Contains("LAWSUIT")||s.Contains("DIVORCE"))return C("#b91c1c");if(s.Contains("DREAM"))return C("#7e22ce");if(s.Contains("MARKET"))return C("#6b21a8");return C("#0369a1");}
-    void MoveToken(){int p=fastTrack?fastPosition:position;float angle=(p/24f)*Mathf.PI*2-Mathf.PI/2;float rx=fastTrack?500:265,ry=fastTrack?205:132;token.GetComponent<RectTransform>().anchoredPosition=new Vector2(Mathf.Cos(angle)*rx,Mathf.Sin(angle)*ry);}
+    void MoveToken(){int p=fastTrack?fastPosition:position;float angle=(p/24f)*Mathf.PI*2-Mathf.PI/2;float rx=fastTrack?565:330,ry=fastTrack?270:172;token.GetComponent<RectTransform>().anchoredPosition=new Vector2(Mathf.Cos(angle)*rx,Mathf.Sin(angle)*ry);}
     void Roll(){if(skipTurns>0){skipTurns--;Log("Downsized: turn skipped ("+skipTurns+" left).");return;}int die=Random.Range(1,charity?13:7);if(charity)charity=false;int old=fastTrack?fastPosition:position;if(fastTrack)fastPosition=(fastPosition+die)%24;else position=(position+die)%24;if(!fastTrack&&old+die>=24)Payday();MoveToken();Land(fastTrack?fastTiles[fastPosition]:ratTiles[position]);Refresh();}
     void Land(string tile)
     {
