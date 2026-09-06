@@ -6,7 +6,7 @@ using UnityEngine.UI;
 public partial class CashflowGame
 {
     GameObject openingBackdrop;
-    Sprite ProfessionPortrait(int index){return ArtSprite("profession-"+index,"Onboarding/professions",new Rect(Mathf.Clamp(index,0,4)/5f,0,.2f,.55f));}
+    Sprite ProfessionPortrait(int index){return index<5?ArtSprite("profession-"+index,"Onboarding/professions",new Rect(Mathf.Clamp(index,0,4)/5f,0,.2f,.55f)):ArtSprite("profession-"+index,"Onboarding/expansion",new Rect((index-5)/5f,0,.2f,.5f));}
     void SetOpeningBackdrop(bool visible)
     {
         if(openingBackdrop==null&&visible)
@@ -24,9 +24,9 @@ public partial class CashflowGame
         var tag=Label(uiRoot,"YOUR ROAD TO FINANCIAL FREEDOM",12);tag.color=C("#443050");Place(tag.rectTransform,0,261,520,22);
         var title=Label(uiRoot,dreamsPage?"Choose your dream":"Choose your profession",32);title.fontStyle=FontStyle.Bold;Place(title.rectTransform,0,207,750,46);
         var shadow=title.gameObject.AddComponent<Shadow>();shadow.effectColor=C("#443050");shadow.effectDistance=new Vector2(1,-2);
-        var progress=Label(uiRoot,dreamsPage?"STEP 2 OF 2  •  YOUR DREAM":"STEP 1 OF 2  •  YOUR PROFESSION",13);progress.color=C("#443050");Place(progress.rectTransform,0,-225,680,25);
         var previous=OpeningButton(uiRoot,"‹",()=>ChangeOpeningSelection(dreamsPage,-1));previous.name="Previous Selection";Place(previous.GetComponent<RectTransform>(),-589,-20,54,74);SetButtonText(previous,C("#443050"),40);
         var next=OpeningButton(uiRoot,"›",()=>ChangeOpeningSelection(dreamsPage,1));next.name="Next Selection";Place(next.GetComponent<RectTransform>(),589,-20,54,74);SetButtonText(next,C("#443050"),40);
+        AddRandomStart();
         if(dreamsPage){var back=OpeningButton(uiRoot,"‹  PROFESSION",ShowSetup);back.name="Back to Profession";Place(back.GetComponent<RectTransform>(),-495,301,210,44);SetButtonText(back,C("#443050"),14);}
     }
     Button OpeningButton(Transform parent,string title,Action action)
@@ -58,7 +58,7 @@ public partial class CashflowGame
         for(int slot=-2;slot<=2;slot++)
         {
             int index=(selectedDream+slot+dreams.Length)%dreams.Length;
-            var art=ArtSprite("dream-"+index,"Onboarding/dreams",new Rect(index%4/4f,index/4/2f,.25f,.5f));
+            var art=index<8?ArtSprite("dream-"+index,"Onboarding/dreams",new Rect(index%4/4f,index/4/2f,.25f,.5f)):ArtSprite("dream-"+index,"Onboarding/expansion",new Rect((index-8)/5f,.5f,.2f,.5f));
             OpeningCard(slot,dreams[index],art,"YOUR DREAM GOAL",Money(dreamGoals[index]),()=>{selectedDream=index;PlayerPrefs.SetInt("CashflowDream",index);ShowDreams();},true);
         }
         OpeningSummary("YOUR PROFESSION",profession.name,"YOUR DREAM",(selectedDream+1)+" / "+dreams.Length,"TARGET",Money(dreamGoals[selectedDream]));

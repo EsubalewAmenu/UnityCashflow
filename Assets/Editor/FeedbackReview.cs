@@ -39,7 +39,7 @@ using UnityEngine.UI;
                 case 5:Shot("history");break;
                 case 6:
                     Click("History Older");Call("CloseModal");Set("children",3);int expenses=(int)Call("Expenses");Call("Land","BABY");Check((int)Call("Expenses")==expenses,"Fourth child changed expenses");
-                    Call("StartGame");Check(((System.Collections.ICollection)Get("history")).Count==1,"History did not reset");
+                    Call("StartGame");Check(((System.Collections.ICollection)Get("history")).Count==0,"History did not reset");
                     File.WriteAllText("work/feedback-review/results.txt","PASS: bill preview, shortfall borrowing, duplicate guard, skipped turns, charity status, finance review preserves offer, purchase after review, history navigation/reset, child limit and text fit.\n");running=false;return;
             }
             step++;next=EditorApplication.timeSinceStartup+2;

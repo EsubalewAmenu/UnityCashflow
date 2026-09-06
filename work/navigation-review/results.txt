@@ -1,0 +1,1 @@
+PASS: 10 professions / 13 dreams, portraits, positive starting finances, random selection bounds and actual direct start, selection persistence, removed text, card text fit, exit cancellation and return to menu.
