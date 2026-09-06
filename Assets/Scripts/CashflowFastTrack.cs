@@ -23,14 +23,14 @@ public partial class CashflowGame
             OfferDeal(new Deal(parts[0].Trim(),income*5,income,"This Fast Track business requires an upfront investment. Its income is added to your portfolio and collected on Cashflow Day."),true);return;
         }
         int loss=tile=="TAX AUDIT"?cash/10:tile=="LAWSUIT"?Mathf.Min(cash,25000):tile=="DIVORCE"?cash/2:cash/5;
-        loss=Mathf.Max(0,loss);cash-=loss;
+        loss=Mathf.Max(0,loss);cash-=loss;Log(tile+": paid "+Money(loss)+".");
         ShowEventPanel(tile,"Cash cost: "+Money(loss)+"\n\n"+(tile=="TAX AUDIT"?"An audit costs 10% of available cash.":tile=="LAWSUIT"?"A legal settlement costs up to $25,000 from available cash.":tile=="DIVORCE"?"A settlement divides your available cash in half.":"A market correction costs 20% of available cash.")+"\nYour investments and debts remain.",C("#a84036"));
     }
     bool PurchaseDream()
     {
         int cost=dreamGoals[selectedDream];
         if(!fastTrack||gameWon||cash<cost)return false;
-        cash-=cost;gameWon=true;return true;
+        cash-=cost;gameWon=true;Log("Dream purchased: "+dream+" for "+Money(cost)+".");return true;
     }
     void ShowDreamPurchase()
     {

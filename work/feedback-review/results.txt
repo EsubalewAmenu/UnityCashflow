@@ -1,0 +1,1 @@
+PASS: bill preview, shortfall borrowing, duplicate guard, skipped turns, charity status, finance review preserves offer, purchase after review, history navigation/reset, child limit and text fit.

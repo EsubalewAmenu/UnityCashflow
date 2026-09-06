@@ -41,6 +41,7 @@ public partial class CashflowGame
     void ShowStatement()
     {
         var card=CardShell("YOUR MONEY • YOUR PROGRESS","Financial statement",C("#21756a"),new Vector2(800,590));
+        AddHistoryButton(card);
         var cashBox=Panel(card.transform,Vector2.one*.5f,Vector2.one*.5f,new Vector2(340,78),C("#21756a"));Place(cashBox.GetComponent<RectTransform>(),-185,126,340,78);
         var cashText=Label(cashBox.transform,"CASH AVAILABLE\n"+Money(cash),23);Stretch(cashText.rectTransform);
         int net=Income()-Expenses();

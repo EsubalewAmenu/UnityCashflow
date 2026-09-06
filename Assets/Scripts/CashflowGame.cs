@@ -104,7 +104,7 @@ public partial class CashflowGame : MonoBehaviour
     void BuildCanvas() { var root=new GameObject("Cashflow Unity",typeof(Canvas),typeof(CanvasScaler),typeof(GraphicRaycaster)); canvas=root.GetComponent<Canvas>(); canvas.renderMode=RenderMode.ScreenSpaceOverlay; var scaler=root.GetComponent<CanvasScaler>(); scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution=new Vector2(1280,720); scaler.matchWidthOrHeight=.5f; uiRoot=new GameObject("Safe Area",typeof(RectTransform),typeof(SafeBoardLayout)).GetComponent<RectTransform>(); uiRoot.SetParent(root.transform,false); var bg=new GameObject("Background",typeof(Image)); bg.transform.SetParent(uiRoot,false); bg.GetComponent<Image>().color=C("#0b1220"); Stretch(bg.GetComponent<RectTransform>()); }
     void ClearUI() { foreach(Transform child in uiRoot) if(child.name!="Background"){child.gameObject.SetActive(false);Destroy(child.gameObject);} }
     void SetButtonText(Button button, Color color, int size) { var text=button.GetComponentInChildren<Text>(); if(text!=null){text.color=color;text.fontSize=size;text.fontStyle=FontStyle.Bold;} }
-    void StartGame(){ if(profession==null)LoadProfessionSelection(); selectedDream=Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream",0),0,dreams.Length-1); dream=dreams[selectedDream]; cash=profession.savings; portfolio.Clear(); passive=0;children=0;position=0;fastPosition=0;fastTrack=false;charity=false;skipTurns=0;bankLoan=0;gameWon=false;fastTrackIntro=false;ResetPersonalDebts();BuildGame(); Log("Welcome, "+profession.name+". Roll the dice to begin."); }
+    void StartGame(){ if(profession==null)LoadProfessionSelection(); selectedDream=Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream",0),0,dreams.Length-1); dream=dreams[selectedDream]; cash=profession.savings; portfolio.Clear(); passive=0;children=0;position=0;fastPosition=0;fastTrack=false;charity=false;skipTurns=0;bankLoan=0;gameWon=false;fastTrackIntro=false;ResetPersonalDebts();ResetHistory();BuildGame(); Log("Welcome, "+profession.name+". Roll the dice to begin."); }
     void BuildGame()
     {
         if(world!=null){world.gameObject.SetActive(false);Destroy(world.gameObject);}
@@ -279,17 +279,17 @@ public partial class CashflowGame : MonoBehaviour
     }
     Color TileColor(string s){if(s.Contains("PAYDAY")||s.Contains("CASHFLOW"))return C("#80b66b");if(s.Contains("OPPORTUNITY")||s.Contains("+"))return C("#d89458");if(s.Contains("DOODAD")||s.Contains("AUDIT")||s.Contains("LAWSUIT")||s.Contains("DIVORCE"))return C("#c9756c");if(s.Contains("DREAM"))return C("#9c80b2");if(s.Contains("MARKET"))return C("#68a6b2");return C("#839ac0");}
     void MoveToken(){if(world!=null)world.PlacePawn(fastTrack?fastPosition:position,fastTrack);}
-    void Roll(){if(gameWon||rolling||modal!=null)return;if(fastTrackIntro){fastTrackIntro=false;ShowFastTrackIntro();return;}if(skipTurns>0){skipTurns--;Log("Downsized: turn skipped ("+skipTurns+" left).");return;}StartCoroutine(RollTurn());}
+    void Roll(){if(gameWon||rolling||modal!=null)return;if(fastTrackIntro){fastTrackIntro=false;ShowFastTrackIntro();return;}if(skipTurns>0){skipTurns--;Log("Downsized: turn skipped ("+skipTurns+" left).");Refresh();ShowEventPanel("TURN SKIPPED",skipTurns>0?skipTurns+" skipped turn remains.":"You can roll again on your next turn.",C("#654174"));return;}StartCoroutine(RollTurn());}
     IEnumerator RollTurn()
     {
         rolling=true;rollButton.interactable=false;HideHover();diceResult.text="ROLLING...";
         yield return world.ThrowDice(charity?2:1);charity=false;
-        int die=world.DiceTotal;diceResult.text="ROLLED  "+die;
+        int die=world.DiceTotal;lastRoll=die;diceResult.text="ROLLED  "+die;
         int old=fastTrack?fastPosition:position;
         yield return world.MovePawn(old,die,fastTrack);
         if(fastTrack)fastPosition=(old+die)%24;else position=(old+die)%24;
         CollectMovementPaydays(old,die);
-        Land(fastTrack?fastTiles[fastPosition]:ratTiles[position]);Refresh();rolling=false;rollButton.interactable=modal==null;
+        Land(fastTrack?fastTiles[fastPosition]:ratTiles[position]);Refresh();rolling=false;UpdateTurnStatus();rollButton.interactable=modal==null;
     }
     // Include the destination, but never the starting space. Movement owns the
     // payment so landing on Payday cannot collect it a second time.
@@ -302,10 +302,10 @@ public partial class CashflowGame : MonoBehaviour
     {
         if(tile=="PAYDAY"){ ShowEventPanel("PAYDAY","Your monthly cashflow was added to cash.\n\nCollected: "+Money(Income()-Expenses()),C("#a16207")); return; }
         if(tile=="OPPORTUNITY"){ ShowDealChoice(); return; }
-        if(tile=="DOODAD"){ int cost=Random.Range(100,1001); cash-=cost; Log("Doodad: paid "+Money(cost)); ShowEventPanel("DOODAD","Unexpected expense paid.\n\nCost: "+Money(cost),C("#b91c1c")); return; }
+        if(tile=="DOODAD"){ ShowUnexpectedExpense(); return; }
         if(tile=="CHARITY"){ShowCharityChoice();return;}
-        if(tile=="BABY"){ children=Mathf.Min(3,children+1); Log("A new baby joins the family. Expenses increased."); ShowEventPanel("BABY","Your family grew.\n\nMonthly expenses increased by "+Money(profession.childPay)+".",C("#be185d")); return; }
-        if(tile=="DOWNSIZED"){ cash-=Expenses(); skipTurns=2; Log("Downsized: paid expenses and lose 2 turns."); ShowEventPanel("DOWNSIZED","You paid one month of expenses and must skip two turns.\n\nCost: "+Money(Expenses()),C("#0369a1")); return; }
+        if(tile=="BABY"){ if(children>=3){ShowEventPanel("FAMILY UPDATE","Your family is already at the three-child game limit. Monthly expenses stay the same.",C("#be185d"));return;}children++; Log("A new baby joins the family. Expenses increased."); ShowEventPanel("BABY","Your family grew.\n\nMonthly expenses increased by "+Money(profession.childPay)+".",C("#be185d")); return; }
+        if(tile=="DOWNSIZED"){ ShowRequiredExpense("DOWNSIZED","Your job is interrupted. Pay one month of expenses, then skip two turns.",Expenses(),2); return; }
         if(tile=="MARKET"){ ShowMarketOffer(); return; }
         if(fastTrack)ResolveFastTrack(tile);
     }
@@ -315,7 +315,7 @@ public partial class CashflowGame : MonoBehaviour
     void CheckEscape(){if(!fastTrack&&passive>Expenses()){fastTrack=true;fastPosition=0;fastTrackIntro=true;DrawBoard();MoveToken();Log("You escaped the Rat Race! Welcome to the Fast Track.");}}
     void Refresh()
     {
-        if(header==null)return;
+        UpdateTurnStatus();if(header==null)return;
         if(bottomCash!=null)bottomCash.text=Money(cash);
         if(freedomFill!=null)freedomFill.fillAmount=fastTrack?Mathf.Clamp01(cash/(float)dreamGoals[selectedDream]):Mathf.Clamp01(passive/(float)Mathf.Max(1,Expenses()));
         if(freedomText!=null)freedomText.text=fastTrack?dream+" • "+Money(cash)+" / "+Money(dreamGoals[selectedDream]):Money(passive)+" / "+Money(Expenses())+" per month";
@@ -324,7 +324,7 @@ public partial class CashflowGame : MonoBehaviour
         if(cashReadout!=null) cashReadout.text="◉  "+Money(cash);
         if(flowReadout!=null) flowReadout.text="↗  "+Money(passive);
     }
-    void Log(string s){if(log!=null)log.text=s;}
+    void Log(string s){RecordHistory(s);if(log!=null)log.text=s;UpdateTurnStatus();}
     string Money(int v){return (v<0?"-":"")+"$"+Mathf.Abs(v).ToString("N0");}
 
     void Win(){if(!gameWon)return;var p=Modal(new Vector2(520,260));var t=Label(p.transform,"DREAM ACHIEVED!\n\nYou reached your dream: "+dream+"\n\nCongratulations!",26);Place(t.rectTransform,0,20,470,190);var again=Button(p.transform,"PLAY AGAIN",C("#16a34a"),StartGame);Place(again.GetComponent<RectTransform>(),0,-95,160,42);}

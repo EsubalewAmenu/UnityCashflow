@@ -35,6 +35,7 @@ public partial class CashflowGame
     {
         int debt=asset.outstandingBankLoan,net=price-debt;
         var card=CardShell("THE MARKET • BUYER OFFER",asset.title,C("#21756a"),new Vector2(900,590),true);
+        AddDecisionReview(card);
         var story=Label(card.transform,context+" You can sell this investment or keep collecting its income.",19,TextAnchor.MiddleLeft);
         story.color=C("#51445b");Place(story.rectTransform,0,135,810,70);
         FinanceRow(card.transform,"Buyer pays",Money(price),75);
