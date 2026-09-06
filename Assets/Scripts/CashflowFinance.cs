@@ -33,7 +33,7 @@ public partial class CashflowGame
         {
             if(resolved)return;resolved=true;
             // Recompute against the current balance, so accepting cannot overdraw cash.
-            int loan=LoanNeeded(deal);bankLoan+=loan;cash+=loan-deal.down;passive+=deal.flow;
+            int loan=LoanNeeded(deal);PurchaseInvestment(deal,loan);
             CloseModal();CheckEscape();Refresh();Log("Borrowed "+Money(loan)+" and bought "+deal.title+". Loan interest: "+Money(LoanPayment())+"/mo.");PurchaseCelebration(deal);
         });accept.name="Confirm Loan";Place(accept.GetComponent<RectTransform>(),150,-202,310,54);SetButtonText(accept,Color.white,18);
         var pass=Button(card.transform,"PASS ON DEAL",C("#e8dcc5"),()=>{if(resolved)return;resolved=true;CloseModal();Log("Passed on "+deal.title+". No loan taken.");});pass.name="Pass Loan";Place(pass.GetComponent<RectTransform>(),-190,-202,270,54);SetButtonText(pass,C("#51445b"),18);
@@ -55,9 +55,10 @@ public partial class CashflowGame
         bool repaid=false;
         var repay=Button(card.transform,"REPAY $1,000",C("#654174"),()=>
         {
-            if(repaid||bankLoan<1000||cash<1000)return;repaid=true;bankLoan-=1000;cash-=1000;CheckEscape();Refresh();ShowStatement();
-        });repay.name="Repay Loan";repay.interactable=bankLoan>=1000&&cash>=1000;Place(repay.GetComponent<RectTransform>(),-175,-230,280,52);SetButtonText(repay,Color.white,18);
-        var done=Button(card.transform,"BACK TO BOARD",C("#21756a"),CloseModal);done.name="Close Finances";Place(done.GetComponent<RectTransform>(),165,-230,300,52);SetButtonText(done,Color.white,18);
+            if(repaid||bankLoan<1000||cash<1000)return;repaid=true;RepayInvestmentLoan(1000);CheckEscape();Refresh();ShowStatement();
+        });repay.name="Repay Loan";repay.interactable=bankLoan>=1000&&cash>=1000;Place(repay.GetComponent<RectTransform>(),-245,-230,220,52);SetButtonText(repay,Color.white,18);
+        var assets=Button(card.transform,"PORTFOLIO",C("#654174"),()=>ShowPortfolio(0));assets.name="Open Portfolio";Place(assets.GetComponent<RectTransform>(),0,-230,220,52);SetButtonText(assets,Color.white,18);
+        var done=Button(card.transform,"BACK TO BOARD",C("#21756a"),CloseModal);done.name="Close Finances";Place(done.GetComponent<RectTransform>(),245,-230,220,52);SetButtonText(done,Color.white,18);
     }
     void FinanceRow(Transform parent,string caption,string value,float y)
     {

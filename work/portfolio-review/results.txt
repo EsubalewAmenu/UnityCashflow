@@ -1,0 +1,1 @@
+PASS: cash and financed purchases; repeated investments; duplicate click guard; buy/pass and loan cancellation; income sum; debt repayment allocation; empty state, pagination, details and finance navigation; text bounds; new-game reset.

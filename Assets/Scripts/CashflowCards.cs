@@ -69,7 +69,7 @@ public partial class CashflowGame
         {
             if(resolved)return;resolved=true;
             if(cash<deal.down){ShowLoanOffer(deal,big);return;}
-            cash-=deal.down;passive+=deal.flow;CloseModal();Log("Bought "+deal.title+". Passive income +"+Money(deal.flow));CheckEscape();Refresh();PurchaseCelebration(deal);
+            PurchaseInvestment(deal,0);CloseModal();Log("Bought "+deal.title+". Passive income +"+Money(deal.flow));CheckEscape();Refresh();PurchaseCelebration(deal);
         });buy.gameObject.name="Buy Deal";buy.interactable=true;Place(buy.GetComponent<RectTransform>(),190,-245,350,54);SetButtonText(buy,Color.white,18);
         var pass=Button(card.transform,"PASS",C("#e8dcc5"),()=>{if(resolved)return;resolved=true;CloseModal();Log("Passed on "+deal.title);});pass.gameObject.name="Pass Deal";Place(pass.GetComponent<RectTransform>(),-230,-245,270,54);SetButtonText(pass,C("#51445b"),18);
     }
