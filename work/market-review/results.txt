@@ -1,0 +1,1 @@
+PASS: empty market, pass, financed and debt-free sales, cash shortfall block and contribution, duplicate/stale sale guards, separate same-name assets, unrelated debt preservation, passive income and Payday, offer text fit.

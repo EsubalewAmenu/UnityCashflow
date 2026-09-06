@@ -249,7 +249,7 @@ public partial class CashflowGame : MonoBehaviour
         if(title.Contains("OPPORTUNITY")) return "draw an investment deal.";
         if(title.Contains("DOODAD")) return "pay an unexpected expense.";
         if(title.Contains("CHARITY")) return "choose to donate for two dice next roll, or pass and keep one die.";
-        if(title.Contains("MARKET")) return "receive a market offer or stock split.";
+        if(title.Contains("MARKET")) return "review a buyer offer for an investment you own. Sell it or keep its income.";
         if(title.Contains("BABY")) return "add a new monthly expense.";
         if(title.Contains("DOWNSIZED")) return "pay expenses and lose two turns.";
         if(title.Contains("DREAM")) return "buy your lifelong dream to win.";
@@ -307,7 +307,7 @@ public partial class CashflowGame : MonoBehaviour
         if(tile=="CHARITY"){ShowCharityChoice();return;}
         if(tile=="BABY"){ children=Mathf.Min(3,children+1); Log("A new baby joins the family. Expenses increased."); ShowEventPanel("BABY","Your family grew.\n\nMonthly expenses increased by "+Money(profession.childPay)+".",C("#be185d")); return; }
         if(tile=="DOWNSIZED"){ cash-=Expenses(); skipTurns=2; Log("Downsized: paid expenses and lose 2 turns."); ShowEventPanel("DOWNSIZED","You paid one month of expenses and must skip two turns.\n\nCost: "+Money(Expenses()),C("#0369a1")); return; }
-        if(tile=="MARKET"){ int gain=Mathf.Max(0,passive*5); cash+=gain; Log("Market day: portfolio value realized."); ShowEventPanel("THE MARKET","A market event produced a portfolio gain.\n\nCash received: "+Money(gain),C("#6b21a8")); return; }
+        if(tile=="MARKET"){ ShowMarketOffer(); return; }
         if(fastTrack)
         {
             if(tile.Contains("CASHFLOW")){cash+=fastFlow;Log("Cashflow Day: collected "+Money(fastFlow));ShowEventPanel("CASHFLOW DAY","Your Fast Track income was collected.\n\nReceived: "+Money(fastFlow),C("#a16207"));}
