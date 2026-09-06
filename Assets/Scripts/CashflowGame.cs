@@ -39,7 +39,7 @@ public partial class CashflowGame : MonoBehaviour
         new Deal("4-Plex", 10000, 800, "Invest in a building with four rental homes. Its combined rental cashflow provides a larger monthly income stream for a larger upfront payment."),
         new Deal("Pizza Franchise", 35000, 3000, "Invest in a pizza franchise serving local customers. This business needs a substantial upfront payment and produces monthly operating cashflow.") };
 
-    Profession profession; string dream; int selectedDream; int cash, passive, children, position, fastPosition, fastFlow; bool fastTrack, charity; int skipTurns; int bankLoan;
+    Profession profession; string dream; int selectedDream; int cash, passive, children, position, fastPosition; bool fastTrack, charity; int skipTurns; int bankLoan;
     BoardWorld world; Button rollButton; bool rolling; GameObject modal;
     RectTransform uiRoot; Text bottomCash, freedomText, diceResult; Image freedomFill;
     Canvas canvas; Text header, statement, log, cashReadout, flowReadout, modeReadout, hoverCopy; RectTransform board; GameObject hoverPanel; Sprite circleSprite, roundedSprite; Font uiFont; readonly Dictionary<string, Sprite> artSprites = new Dictionary<string, Sprite>(); readonly List<Button> tileButtons = new List<Button>(); readonly List<GameObject> boardDecorations = new List<GameObject>();
@@ -104,7 +104,7 @@ public partial class CashflowGame : MonoBehaviour
     void BuildCanvas() { var root=new GameObject("Cashflow Unity",typeof(Canvas),typeof(CanvasScaler),typeof(GraphicRaycaster)); canvas=root.GetComponent<Canvas>(); canvas.renderMode=RenderMode.ScreenSpaceOverlay; var scaler=root.GetComponent<CanvasScaler>(); scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution=new Vector2(1280,720); scaler.matchWidthOrHeight=.5f; uiRoot=new GameObject("Safe Area",typeof(RectTransform),typeof(SafeBoardLayout)).GetComponent<RectTransform>(); uiRoot.SetParent(root.transform,false); var bg=new GameObject("Background",typeof(Image)); bg.transform.SetParent(uiRoot,false); bg.GetComponent<Image>().color=C("#0b1220"); Stretch(bg.GetComponent<RectTransform>()); }
     void ClearUI() { foreach(Transform child in uiRoot) if(child.name!="Background"){child.gameObject.SetActive(false);Destroy(child.gameObject);} }
     void SetButtonText(Button button, Color color, int size) { var text=button.GetComponentInChildren<Text>(); if(text!=null){text.color=color;text.fontSize=size;text.fontStyle=FontStyle.Bold;} }
-    void StartGame(){ if(profession==null)LoadProfessionSelection(); selectedDream=Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream",0),0,dreams.Length-1); dream=dreams[selectedDream]; cash=profession.savings; portfolio.Clear(); passive=0;children=0;position=0;fastPosition=0;fastFlow=0;fastTrack=false;charity=false;skipTurns=0;bankLoan=0;ResetPersonalDebts();BuildGame(); Log("Welcome, "+profession.name+". Roll the dice to begin."); }
+    void StartGame(){ if(profession==null)LoadProfessionSelection(); selectedDream=Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream",0),0,dreams.Length-1); dream=dreams[selectedDream]; cash=profession.savings; portfolio.Clear(); passive=0;children=0;position=0;fastPosition=0;fastTrack=false;charity=false;skipTurns=0;bankLoan=0;gameWon=false;fastTrackIntro=false;ResetPersonalDebts();BuildGame(); Log("Welcome, "+profession.name+". Roll the dice to begin."); }
     void BuildGame()
     {
         if(world!=null){world.gameObject.SetActive(false);Destroy(world.gameObject);}
@@ -279,7 +279,7 @@ public partial class CashflowGame : MonoBehaviour
     }
     Color TileColor(string s){if(s.Contains("PAYDAY")||s.Contains("CASHFLOW"))return C("#80b66b");if(s.Contains("OPPORTUNITY")||s.Contains("+"))return C("#d89458");if(s.Contains("DOODAD")||s.Contains("AUDIT")||s.Contains("LAWSUIT")||s.Contains("DIVORCE"))return C("#c9756c");if(s.Contains("DREAM"))return C("#9c80b2");if(s.Contains("MARKET"))return C("#68a6b2");return C("#839ac0");}
     void MoveToken(){if(world!=null)world.PlacePawn(fastTrack?fastPosition:position,fastTrack);}
-    void Roll(){if(rolling||modal!=null)return;if(skipTurns>0){skipTurns--;Log("Downsized: turn skipped ("+skipTurns+" left).");return;}StartCoroutine(RollTurn());}
+    void Roll(){if(gameWon||rolling||modal!=null)return;if(fastTrackIntro){fastTrackIntro=false;ShowFastTrackIntro();return;}if(skipTurns>0){skipTurns--;Log("Downsized: turn skipped ("+skipTurns+" left).");return;}StartCoroutine(RollTurn());}
     IEnumerator RollTurn()
     {
         rolling=true;rollButton.interactable=false;HideHover();diceResult.text="ROLLING...";
@@ -295,9 +295,8 @@ public partial class CashflowGame : MonoBehaviour
     // payment so landing on Payday cannot collect it a second time.
     void CollectMovementPaydays(int start,int steps)
     {
-        if(fastTrack)return;
         for(int step=1;step<=steps;step++)
-            if(ratTiles[(start+step)%ratTiles.Length]=="PAYDAY")Payday();
+            if(fastTrack?fastTiles[(start+step)%fastTiles.Length]=="CASHFLOW DAY":ratTiles[(start+step)%ratTiles.Length]=="PAYDAY")Payday();
     }
     void Land(string tile)
     {
@@ -308,31 +307,25 @@ public partial class CashflowGame : MonoBehaviour
         if(tile=="BABY"){ children=Mathf.Min(3,children+1); Log("A new baby joins the family. Expenses increased."); ShowEventPanel("BABY","Your family grew.\n\nMonthly expenses increased by "+Money(profession.childPay)+".",C("#be185d")); return; }
         if(tile=="DOWNSIZED"){ cash-=Expenses(); skipTurns=2; Log("Downsized: paid expenses and lose 2 turns."); ShowEventPanel("DOWNSIZED","You paid one month of expenses and must skip two turns.\n\nCost: "+Money(Expenses()),C("#0369a1")); return; }
         if(tile=="MARKET"){ ShowMarketOffer(); return; }
-        if(fastTrack)
-        {
-            if(tile.Contains("CASHFLOW")){cash+=fastFlow;Log("Cashflow Day: collected "+Money(fastFlow));ShowEventPanel("CASHFLOW DAY","Your Fast Track income was collected.\n\nReceived: "+Money(fastFlow),C("#a16207"));}
-            else if(tile.Contains("DREAM")){Win();}
-            else if(tile.Contains("+")){int gained=int.Parse(tile.Split('+')[1].Replace("K",""))*1000;fastFlow+=gained;Log("Fast Track deal: gained "+Money(gained)+"/mo.");ShowEventPanel("FAST TRACK DEAL","Your venture is now producing more income.\n\nNew cashflow: +"+Money(gained)+"/mo",C("#075e50"));}
-            else{int lost=cash-cash/2;cash=Mathf.Max(0,cash/2);Log("Fast Track hazard reduced cash.");ShowEventPanel("FAST TRACK HAZARD","A setback reduced your available cash.\n\nLost: "+Money(lost),C("#b91c1c"));}
-        }
+        if(fastTrack)ResolveFastTrack(tile);
     }
     int Expenses(){return profession.taxes+PersonalDebtPayments()+profession.other+children*profession.childPay+LoanPayment();}
-    int Income(){return (fastTrack?fastFlow:profession.salary)+passive;}
+    int Income(){return (fastTrack?0:profession.salary)+passive;}
     void Payday(){int amount=Income()-Expenses();cash+=amount;Log("PAYDAY: collected "+Money(amount));}
-    void CheckEscape(){if(!fastTrack&&passive>Expenses()){fastTrack=true;cash=passive*100;DrawBoard();Log("You escaped the Rat Race! Welcome to the Fast Track.");}}
+    void CheckEscape(){if(!fastTrack&&passive>Expenses()){fastTrack=true;fastPosition=0;fastTrackIntro=true;DrawBoard();MoveToken();Log("You escaped the Rat Race! Welcome to the Fast Track.");}}
     void Refresh()
     {
         if(header==null)return;
         if(bottomCash!=null)bottomCash.text=Money(cash);
-        if(freedomFill!=null)freedomFill.fillAmount=Mathf.Clamp01(passive/(float)Mathf.Max(1,Expenses()));
-        if(freedomText!=null)freedomText.text=Money(passive)+" / "+Money(Expenses())+" per month";
+        if(freedomFill!=null)freedomFill.fillAmount=fastTrack?Mathf.Clamp01(cash/(float)dreamGoals[selectedDream]):Mathf.Clamp01(passive/(float)Mathf.Max(1,Expenses()));
+        if(freedomText!=null)freedomText.text=fastTrack?dream+" • "+Money(cash)+" / "+Money(dreamGoals[selectedDream]):Money(passive)+" / "+Money(Expenses())+" per month";
         header.text=profession.name.ToUpper()+"  /  "+(fastTrack?"FAST TRACK":"RAT RACE");
         if(modeReadout!=null) modeReadout.text=fastTrack?"FAST TRACK":"RAT RACE";
         if(cashReadout!=null) cashReadout.text="◉  "+Money(cash);
-        if(flowReadout!=null) flowReadout.text="↗  "+Money(fastTrack?fastFlow:passive);
+        if(flowReadout!=null) flowReadout.text="↗  "+Money(passive);
     }
     void Log(string s){if(log!=null)log.text=s;}
     string Money(int v){return (v<0?"-":"")+"$"+Mathf.Abs(v).ToString("N0");}
 
-    void Win(){var p=Modal(new Vector2(520,260));var t=Label(p.transform,"DREAM ACHIEVED!\n\nYou reached your dream: "+dream+"\n\nCongratulations!",26);Place(t.rectTransform,0,20,470,190);var again=Button(p.transform,"PLAY AGAIN",C("#16a34a"),StartGame);Place(again.GetComponent<RectTransform>(),0,-95,160,42);}
+    void Win(){if(!gameWon)return;var p=Modal(new Vector2(520,260));var t=Label(p.transform,"DREAM ACHIEVED!\n\nYou reached your dream: "+dream+"\n\nCongratulations!",26);Place(t.rectTransform,0,20,470,190);var again=Button(p.transform,"PLAY AGAIN",C("#16a34a"),StartGame);Place(again.GetComponent<RectTransform>(),0,-95,160,42);}
 }

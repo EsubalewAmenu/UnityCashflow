@@ -46,7 +46,7 @@ public partial class CashflowGame
         int net=Income()-Expenses();
         var flowBox=Panel(card.transform,Vector2.one*.5f,Vector2.one*.5f,new Vector2(340,78),C(net>=0?"#654174":"#a84036"));Place(flowBox.GetComponent<RectTransform>(),185,126,340,78);
         var flowText=Label(flowBox.transform,"MONTHLY CASHFLOW\n"+Money(net),23);Stretch(flowText.rectTransform);
-        FinanceRow(card.transform,"Salary / Fast Track income",Money(fastTrack?fastFlow:profession.salary),53);
+        FinanceRow(card.transform,fastTrack?"Salary (retired)":"Salary",Money(fastTrack?0:profession.salary),53);
         FinanceRow(card.transform,"Passive income",Money(passive),11);
         FinanceRow(card.transform,"Living expenses",Money(Expenses()-LoanPayment()),-31);
         FinanceRow(card.transform,"Bank loan interest / month",Money(LoanPayment()),-73);

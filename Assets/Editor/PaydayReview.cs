@@ -56,12 +56,13 @@ public static class PaydayReview
             set("fastTrack", true);
             set("cash", 400);
             collect.Invoke(game, new object[] { 0, 12 });
-            if (cash() != 400) throw new Exception("Rat Race Payday leaked into Fast Track");
+            if (cash() != 400 - 2 * 1720) throw new Exception("Fast Track crossed Cashflow Days failed");
             set("fastTrack", false);
+            set("cash", 400);
             set("bankLoan", 10000);
             collect.Invoke(game, new object[] { 4, 1 });
             if (cash() != 280) throw new Exception("Negative monthly cashflow accounting changed");
-            File.WriteAllText("work/payday-review/results.txt", "PASS: " + cases + " starting-position/roll cases; passing, landing, no double payment, multiple Paydays, wrap without Payday, zero movement, loan interest, negative cashflow, two laps, and Fast Track isolation.\n");
+            File.WriteAllText("work/payday-review/results.txt", "PASS: " + cases + " starting-position/roll cases; passing, landing, no double payment, multiple Paydays, wrap without Payday, zero movement, loan interest, negative cashflow, two laps, and Fast Track Cashflow Days.\n");
             Debug.Log("Payday accounting review passed.");
         }
         catch (Exception error)
