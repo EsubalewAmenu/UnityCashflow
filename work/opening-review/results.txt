@@ -1,0 +1,5 @@
+PASS: opening card/button bounds and artwork at 1280x720.
+PASS: opening card/button bounds and artwork at 2532x1170.
+PASS: opening card/button bounds and artwork at 2340x1080.
+PASS: opening card/button bounds and artwork at 1024x768.
+PASS: carousel selection, profession-to-dream transition, saved selections and start-game handoff.

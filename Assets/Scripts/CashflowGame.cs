@@ -36,7 +36,7 @@ public partial class CashflowGame : MonoBehaviour
     void Awake() { Application.runInBackground=true; BuildCanvas(); }
     public void OpenScene(string sceneName)
     {
-        if (sceneName == "ProfessionSelection" || sceneName == "Main") ShowSetup();
+        if (sceneName == "ProfessionSelection") ShowSetup();
         else if (sceneName == "DreamSelection") ShowDreams();
         else if (sceneName == "GameBoard") StartGame();
         else ShowSetup();
@@ -91,120 +91,15 @@ public partial class CashflowGame : MonoBehaviour
     Button Button(Transform parent,string title,Color color,Action action) { var go=new GameObject(title,typeof(RectTransform),typeof(Image),typeof(Button)); go.transform.SetParent(parent,false); go.GetComponent<Image>().color=color; var b=go.GetComponent<Button>(); b.onClick.AddListener(()=>action()); var tx=Label(go.transform,title,16); Stretch(tx.rectTransform); return b; }
     void Stretch(RectTransform r) { r.anchorMin=Vector2.zero;r.anchorMax=Vector2.one;r.offsetMin=new Vector2(5,4);r.offsetMax=new Vector2(-5,-4); }
     void BuildCanvas() { var root=new GameObject("Cashflow Unity",typeof(Canvas),typeof(CanvasScaler),typeof(GraphicRaycaster)); canvas=root.GetComponent<Canvas>(); canvas.renderMode=RenderMode.ScreenSpaceOverlay; var scaler=root.GetComponent<CanvasScaler>(); scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution=new Vector2(1280,720); scaler.matchWidthOrHeight=.5f; uiRoot=new GameObject("Safe Area",typeof(RectTransform),typeof(SafeBoardLayout)).GetComponent<RectTransform>(); uiRoot.SetParent(root.transform,false); var bg=new GameObject("Background",typeof(Image)); bg.transform.SetParent(uiRoot,false); bg.GetComponent<Image>().color=C("#0b1220"); Stretch(bg.GetComponent<RectTransform>()); }
-    void ClearUI() { foreach(Transform child in uiRoot) if(child.name!="Background") Destroy(child.gameObject); }
-    // Landing page: designed to match the original game's financial-strategy dashboard.
-    void ShowSetup()
-    {
-        if (profession == null) profession = professions[0];
-        ClearUI();
-
-        var shell = Panel(uiRoot, new Vector2(.5f,.5f), new Vector2(.5f,.5f), new Vector2(1220,650), C("#080f1d"));
-        var shellImage = shell.GetComponent<Image>();
-
-        // Header ---------------------------------------------------------------
-        var icon = Panel(shell.transform, new Vector2(.5f,.5f), new Vector2(.5f,.5f), new Vector2(52,52), C("#00c98d"));
-        Place(icon.GetComponent<RectTransform>(), -548, 270, 52, 52);
-        var dollar = Label(icon.transform, "$", 30); dollar.color = C("#061224"); Stretch(dollar.rectTransform);
-        var title = Label(shell.transform, "CASHFLOW 101", 27, TextAnchor.MiddleLeft); title.fontStyle = FontStyle.Bold; Place(title.rectTransform, -488, 282, 280, 34);
-        var tagline = Label(shell.transform, "RICH DAD FINANCIAL STRATEGY", 14, TextAnchor.MiddleLeft); tagline.color = C("#00e2a4"); tagline.fontStyle = FontStyle.Bold; Place(tagline.rectTransform, -487, 257, 320, 24);
-        var nameBox = Panel(shell.transform, new Vector2(.5f,.5f), new Vector2(.5f,.5f), new Vector2(312,44), C("#18243a")); Place(nameBox.GetComponent<RectTransform>(), 12, 270, 312, 44);
-        var name = Label(nameBox.transform, "♙  Name:  Player", 17, TextAnchor.MiddleLeft); name.color = C("#b4c0d3"); Place(name.rectTransform, 18, 0, 275, 35);
-        var resume = Button(shell.transform, "✣  Resume Saved", C("#1b2c45"), ()=>Log("No saved game is available yet.")); Place(resume.GetComponent<RectTransform>(), 496,270,168,44); SetButtonText(resume, C("#00e2a4"), 15);
-        Divider(shell.transform, 235, 1140);
-
-        // Progress bar ---------------------------------------------------------
-        var stepOne = Panel(shell.transform, new Vector2(.5f,.5f), new Vector2(.5f,.5f), new Vector2(565,35), C("#079d70")); Place(stepOne.GetComponent<RectTransform>(), -287, 196, 565, 35);
-        var stepOneText = Label(stepOne.transform, "▣  1. Profession (" + profession.name + ")", 17); stepOneText.fontStyle=FontStyle.Bold; Stretch(stepOneText.rectTransform);
-        var stepTwo = Label(shell.transform, "♙  2. Dream & Start", 17); stepTwo.color=C("#91a3bf"); stepTwo.fontStyle=FontStyle.Bold; Place(stepTwo.rectTransform, 310,196,430,35);
-        Divider(shell.transform, 166, 1140);
-
-        var section = Label(shell.transform, "▣  STEP 1: CHOOSE PROFESSION", 18, TextAnchor.MiddleLeft); section.color=C("#cbd5e1"); section.fontStyle=FontStyle.Bold; Place(section.rectTransform,-540,130,460,30);
-        var randomize = Button(shell.transform, "⤨  Randomize", C("#080f1d"), ()=> { profession=professions[Random.Range(0,professions.Length)]; ShowSetup(); }); Place(randomize.GetComponent<RectTransform>(), 505,130,150,30); SetButtonText(randomize,C("#facc15"),15);
-
-        // Profession cards -----------------------------------------------------
-        for (int i=0; i<professions.Length; i++)
-        {
-            int n=i; var p=professions[i]; bool selected=p==profession;
-            var card=Button(shell.transform, "", selected ? C("#123b39") : C("#17243a"), ()=> { profession=professions[n]; ShowSetup(); });
-            Place(card.GetComponent<RectTransform>(), -440+i*220, 55, 205, 84);
-            var cardImage=card.GetComponent<Image>(); if(selected) cardImage.color=C("#123f3c");
-            var cardTitle=Label(card.transform,p.name,18,TextAnchor.MiddleLeft); cardTitle.fontStyle=FontStyle.Bold; Place(cardTitle.rectTransform,12,17,180,28);
-            var salary=Label(card.transform,Money(p.salary)+"/mo",15,TextAnchor.MiddleLeft); salary.color=C("#00d99a"); salary.fontStyle=FontStyle.Bold; Place(salary.rectTransform,12,-13,110,22);
-            var start=Label(card.transform,"Cash:  "+Money(p.savings),14,TextAnchor.MiddleRight); start.color=C("#9fb0c8"); Place(start.rectTransform,85,-13,108,22);
-            if(selected) { var dot=Label(card.transform,"●",20); dot.color=C("#00d99a"); Place(dot.rectTransform,82,17,20,22); }
-        }
-
-        // Financial preview ----------------------------------------------------
-        int costs = Expenses(); int startingFlow = profession.salary-costs;
-        var detail=Panel(shell.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1135,172),C("#151e31")); Place(detail.GetComponent<RectTransform>(),0,-115,1135,172);
-        var selectedLabel=Label(detail.transform,"Selected: "+profession.name,18,TextAnchor.MiddleLeft); selectedLabel.fontStyle=FontStyle.Bold; Place(selectedLabel.rectTransform,20,60,340,28);
-        var savings=Label(detail.transform,"Savings:  "+Money(profession.savings),15,TextAnchor.MiddleRight); savings.fontStyle=FontStyle.Bold; Place(savings.rectTransform,430,60,665,28);
-        FinancialMetric(detail.transform,-370,"SALARY",Money(profession.salary),C("#00d99a"));
-        FinancialMetric(detail.transform,0,"EXPENSES",Money(costs),C("#fb7185"));
-        FinancialMetric(detail.transform,370,"STARTING CASHFLOW",(startingFlow >= 0 ? "+" : "")+Money(startingFlow)+"/mo",C("#facc15"));
-        var debtLeft=Label(detail.transform,"Home Mortgage: $38,000",15,TextAnchor.MiddleLeft); debtLeft.color=C("#9fb0c8"); Place(debtLeft.rectTransform,20,-59,360,25);
-        var debtRight=Label(detail.transform,"School Loans: $12,000",15,TextAnchor.MiddleRight); debtRight.color=C("#9fb0c8"); Place(debtRight.rectTransform,350,-59,745,25);
-
-        var next=Button(shell.transform,"Next: Choose Your Dream  →",C("#079d70"),GoToDreamSelection); Place(next.GetComponent<RectTransform>(),0,-262,1135,52); SetButtonText(next,Color.white,19);
-    }
-
-    void FinancialMetric(Transform parent, float x, string heading, string amount, Color amountColor)
-    {
-        var box=Panel(parent,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(290,66),C("#0d1729")); Place(box.GetComponent<RectTransform>(),x,-3,290,66);
-        var h=Label(box.transform,heading,13); h.color=C("#9fb0c8"); Place(h.rectTransform,0,14,270,20);
-        var a=Label(box.transform,amount,16); a.color=amountColor; a.fontStyle=FontStyle.Bold; Place(a.rectTransform,0,-11,270,22);
-    }
-    void Divider(Transform parent,float y,float width) { var d=new GameObject("Divider",typeof(RectTransform),typeof(Image)); d.transform.SetParent(parent,false); d.GetComponent<Image>().color=C("#26354d"); Place(d.GetComponent<RectTransform>(),0,y,width,1); }
+    void ClearUI() { foreach(Transform child in uiRoot) if(child.name!="Background"){child.gameObject.SetActive(false);Destroy(child.gameObject);} }
     void SetButtonText(Button button, Color color, int size) { var text=button.GetComponentInChildren<Text>(); if(text!=null){text.color=color;text.fontSize=size;text.fontStyle=FontStyle.Bold;} }
-    void ShowDreams()
-    {
-        if (profession == null) LoadProfessionSelection();
-        selectedDream = Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream", selectedDream), 0, dreams.Length - 1);
-        if (selectedDream < 0 || selectedDream >= dreams.Length) selectedDream = 0;
-        ClearUI();
-        var shell = Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1220,650),C("#080f1d"));
-
-        // Shared branded header
-        var icon=Panel(shell.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(52,52),C("#00c98d")); Place(icon.GetComponent<RectTransform>(),-548,270,52,52);
-        var dollar=Label(icon.transform,"$",30); dollar.color=C("#061224"); Stretch(dollar.rectTransform);
-        var title=Label(shell.transform,"CASHFLOW 101",27,TextAnchor.MiddleLeft); title.fontStyle=FontStyle.Bold; Place(title.rectTransform,-488,282,280,34);
-        var tag=Label(shell.transform,"RICH DAD FINANCIAL STRATEGY",14,TextAnchor.MiddleLeft); tag.color=C("#00e2a4"); tag.fontStyle=FontStyle.Bold; Place(tag.rectTransform,-487,257,320,24);
-        var nameBox=Panel(shell.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(312,44),C("#18243a")); Place(nameBox.GetComponent<RectTransform>(),12,270,312,44);
-        var name=Label(nameBox.transform,"♙  Name:  Player",17,TextAnchor.MiddleLeft); name.color=C("#c1cbda"); Place(name.rectTransform,18,0,275,35);
-        var resume=Button(shell.transform,"✣  Resume Saved",C("#1b2c45"),()=>Log("No saved game is available yet.")); Place(resume.GetComponent<RectTransform>(),496,270,168,44); SetButtonText(resume,C("#00e2a4"),15);
-        Divider(shell.transform,235,1140);
-
-        var one=Label(shell.transform,"▣  1. Profession ("+profession.name+")",16); one.color=C("#91a3bf"); one.fontStyle=FontStyle.Bold; Place(one.rectTransform,-300,196,500,35);
-        var two=Panel(shell.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(565,35),C("#079d70")); Place(two.GetComponent<RectTransform>(),287,196,565,35);
-        var twoText=Label(two.transform,"♙  2. Dream & Start",17); twoText.fontStyle=FontStyle.Bold; Stretch(twoText.rectTransform);
-        Divider(shell.transform,166,1140);
-
-        var step=Label(shell.transform,"♙  STEP 2: YOUR LIFELONG DREAM",18,TextAnchor.MiddleLeft); step.color=C("#facc15"); step.fontStyle=FontStyle.Bold; Place(step.rectTransform,-540,130,500,30);
-        var count=Label(shell.transform,(selectedDream+1)+" of "+dreams.Length,15,TextAnchor.MiddleRight); count.color=C("#9fb0c8"); count.fontStyle=FontStyle.Bold; Place(count.rectTransform,420,130,650,30);
-
-        // Dream carousel
-        var carousel=Panel(shell.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1135,178),C("#151e31")); Place(carousel.GetComponent<RectTransform>(),0,10,1135,178);
-        var previous=Button(carousel.transform,"‹",C("#1b2c45"),()=>{selectedDream=(selectedDream+dreams.Length-1)%dreams.Length;PlayerPrefs.SetInt("CashflowDream",selectedDream);ShowDreams();}); Place(previous.GetComponent<RectTransform>(),-500,0,50,50); SetButtonText(previous,C("#cbd5e1"),36);
-        var next=Button(carousel.transform,"›",C("#1b2c45"),()=>{selectedDream=(selectedDream+1)%dreams.Length;PlayerPrefs.SetInt("CashflowDream",selectedDream);ShowDreams();}); Place(next.GetComponent<RectTransform>(),500,0,50,50); SetButtonText(next,C("#cbd5e1"),36);
-        var target=Label(carousel.transform,"FAST TRACK TARGET",15); target.color=C("#00d99a"); target.fontStyle=FontStyle.Bold; Place(target.rectTransform,0,52,400,25);
-        var dreamName=Label(carousel.transform,dreams[selectedDream],27); dreamName.fontStyle=FontStyle.Bold; Place(dreamName.rectTransform,0,17,760,40);
-        var goalBox=Panel(carousel.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(180,38),C("#0d1729")); Place(goalBox.GetComponent<RectTransform>(),0,-25,180,38);
-        var goal=Label(goalBox.transform,"Goal:  "+Money(dreamGoals[selectedDream]),17); goal.color=C("#facc15"); goal.fontStyle=FontStyle.Bold; Stretch(goal.rectTransform);
-        var dots=""; for(int i=0;i<dreams.Length;i++) dots += i==selectedDream ? "● " : "• "; var dotText=Label(carousel.transform,dots,22); dotText.color=C("#00d99a"); Place(dotText.rectTransform,0,-62,300,24);
-
-        // Player confirmation and final start action
-        int flow=profession.salary-Expenses();
-        var confirmation=Panel(shell.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1135,140),C("#101b2e")); Place(confirmation.GetComponent<RectTransform>(),0,-170,1135,140);
-        var player=Label(confirmation.transform,"Player:  Player ("+profession.name+")",17,TextAnchor.MiddleLeft); player.color=C("#d4dbea"); Place(player.rectTransform,20,39,500,28);
-        var cashflow=Label(confirmation.transform,(flow>=0?"+":"")+Money(flow)+"/mo",17,TextAnchor.MiddleRight); cashflow.color=C("#00e2a4"); cashflow.fontStyle=FontStyle.Bold; Place(cashflow.rectTransform,420,39,675,28);
-        var start=Button(confirmation.transform,"⊙  START CASHFLOW GAME",C("#079d70"),()=>{PlayerPrefs.SetInt("CashflowDream",selectedDream);PlayerPrefs.Save();SceneManager.LoadScene("GameBoard");}); Place(start.GetComponent<RectTransform>(),0,-25,1095,66); SetButtonText(start,Color.white,23);
-    }
     void StartGame(){ if(profession==null)LoadProfessionSelection(); selectedDream=Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream",0),0,dreams.Length-1); dream=dreams[selectedDream]; cash=profession.savings; passive=0;children=0;position=0;fastPosition=0;fastFlow=0;fastTrack=false;charity=false;skipTurns=0;bankLoan=0;BuildGame(); Log("Welcome, "+profession.name+". Roll the dice to begin."); }
     void BuildGame()
     {
         if(world!=null){world.gameObject.SetActive(false);Destroy(world.gameObject);}
         rolling=false;modal=null;
         ClearUI();
+        SetOpeningBackdrop(false);
         uiRoot.Find("Background").GetComponent<Image>().color=Color.clear;
         var top=Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(360,44),C("#49375f"));Place(top.GetComponent<RectTransform>(),-433,325,360,44);top.GetComponent<Image>().sprite=RoundedSprite();top.GetComponent<Image>().type=Image.Type.Sliced;
         header=Label(top.transform,"",16);Stretch(header.rectTransform);
@@ -227,7 +122,7 @@ public partial class CashflowGame : MonoBehaviour
         // Fixed HUD: it remains readable while the board world stays unobstructed.
         var bottom=Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1280,86),C("#2d2450")); Place(bottom.GetComponent<RectTransform>(),0,-317,1280,86);
         var portrait=Panel(bottom.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(60,60),C("#f6b34d")); Place(portrait.GetComponent<RectTransform>(),-560,0,60,60); portrait.GetComponent<Image>().sprite=CircleSprite();
-        var portraitArt=new GameObject("Player Portrait Art",typeof(RectTransform),typeof(Image)); portraitArt.transform.SetParent(portrait.transform,false); var portraitImage=portraitArt.GetComponent<Image>(); portraitImage.sprite=ArtSprite("player-portrait","GameBoard/character-pieces-sheet",new Rect(.07f,.08f,.21f,.34f)); portraitImage.preserveAspect=true; portraitImage.raycastTarget=false; Stretch(portraitArt.GetComponent<RectTransform>());
+        var portraitArt=new GameObject("Player Portrait Art",typeof(RectTransform),typeof(Image)); portraitArt.transform.SetParent(portrait.transform,false); var portraitImage=portraitArt.GetComponent<Image>(); portraitImage.sprite=ProfessionPortrait(System.Array.IndexOf(professions,profession)); portraitImage.preserveAspect=true; portraitImage.raycastTarget=false; Stretch(portraitArt.GetComponent<RectTransform>());
         var cashLabel=Label(bottom.transform,"CASH BALANCE",11,TextAnchor.MiddleLeft); cashLabel.color=C("#eadfff"); Place(cashLabel.rectTransform,-395,16,220,20);
         var cashValue=Label(bottom.transform,Money(cash),25,TextAnchor.MiddleLeft); bottomCash=cashValue; cashValue.color=C("#f8d45a"); cashValue.fontStyle=FontStyle.Bold; Place(cashValue.rectTransform,-395,-12,220,30);
         var passiveLabel=Label(bottom.transform,"PASSIVE INCOME",12); passiveLabel.color=C("#eadfff"); passiveLabel.fontStyle=FontStyle.Bold; Place(passiveLabel.rectTransform,-90,23,280,20);

@@ -5,7 +5,7 @@ public class BoardArtImporter : AssetPostprocessor
 {
     void OnPreprocessTexture()
     {
-        if (!assetPath.StartsWith("Assets/Resources/GameBoard/")) return;
+        if (!assetPath.StartsWith("Assets/Resources/GameBoard/") && !assetPath.StartsWith("Assets/Resources/Onboarding/")) return;
         var importer=(TextureImporter)assetImporter;
         importer.textureCompression=TextureImporterCompression.Uncompressed;
         importer.maxTextureSize=4096;
