@@ -50,29 +50,35 @@ public partial class CashflowGame
     void OfferDeal(Deal deal,bool big)
     {
         Color accent=C(big?"#654174":"#21756a");
-        var card=CardShell(big?"BIG DEAL • OPPORTUNITY":"SMALL DEAL • OPPORTUNITY",deal.title,accent,new Vector2(760,490),true);
-        var hero=Panel(card.transform,Vector2.one*.5f,Vector2.one*.5f,new Vector2(220,228),accent);Place(hero.GetComponent<RectTransform>(),-240,-5,220,228);
-        DealArt(hero.transform,big,new Vector2(0,18),new Vector2(185,145));
-        var stamp=Label(hero.transform,"BUILD YOUR\nFINANCIAL FREEDOM",14);stamp.color=C("#f5e4bc");Place(stamp.rectTransform,0,-80,200,45);
-        CardStat(card.transform,"DOWN PAYMENT",Money(deal.down),65,accent);
-        CardStat(card.transform,"MONTHLY CASHFLOW","+"+Money(deal.flow)+" / mo",-8,C("#21756a"));
-        var balance=Label(card.transform,"Available cash: "+Money(cash),16);balance.color=C("#6a6071");Place(balance.rectTransform,110,-80,400,28);
+        var card=CardShell(big?"BIG DEAL • OPPORTUNITY":"SMALL DEAL • OPPORTUNITY",deal.title,accent,new Vector2(900,590),true);
+        var story=Label(card.transform,string.IsNullOrWhiteSpace(deal.description)?"Review the upfront payment and monthly income before deciding whether this investment fits your budget.":deal.description,20,TextAnchor.MiddleLeft);
+        story.name="Deal Explanation";story.color=C("#51445b");Place(story.rectTransform,0,133,810,76);
+        DealFigure(card.transform,"PAY UPFRONT",Money(deal.down),-210,53,accent);
+        DealFigure(card.transform,"ADDED MONTHLY CASHFLOW","+"+Money(deal.flow)+" / mo",210,53,C("#21756a"));
         bool affordable=cash>=deal.down, resolved=false;
-        var status=Label(card.transform,affordable?"Cash after purchase: "+Money(cash-deal.down):"You need "+Money(deal.down-cash)+" more to buy this deal.",16);status.color=C(affordable?"#21756a":"#a84036");Place(status.rectTransform,0,-143,690,32);
+        int loan=affordable?0:LoanNeeded(deal),interest=loan/10;
+        var preview=Panel(card.transform,Vector2.one*.5f,Vector2.one*.5f,new Vector2(810,105),C("#e8eee3"));Place(preview.GetComponent<RectTransform>(),0,-48,810,105);
+        var impact=Label(preview.transform,"Cash: "+Money(cash)+" → "+Money(cash+loan-deal.down)+
+            "\nMonthly cashflow: "+Money(Income()-Expenses())+" → "+Money(Income()-Expenses()+deal.flow-interest),21,TextAnchor.MiddleLeft);
+        impact.name="Deal Impact";impact.color=C("#302540");Place(impact.rectTransform,0,9,770,62);
+        var funding=Label(preview.transform,affordable?"Paid from your cash. No additional bank loan needed.":"Includes a "+Money(loan)+" bank loan costing "+Money(interest)+" per month. Review before confirming.",16,TextAnchor.MiddleLeft);
+        funding.name="Deal Funding";funding.color=C(affordable?"#21756a":"#a84036");Place(funding.rectTransform,0,-32,770,28);
+        var terms=Label(card.transform,"Upfront payment: cash needed to enter this deal.\nMonthly cashflow: income added at each Payday, before any new bank-loan interest.\nPassing costs nothing. Buying adds income; it does not pay you immediately.",17,TextAnchor.MiddleLeft);
+        terms.name="Deal Terms";terms.color=C("#6a6071");Place(terms.rectTransform,0,-156,810,90);
         var buy=Button(card.transform,affordable?"BUY DEAL":"BORROW & BUY...",accent,()=>
         {
             if(resolved)return;resolved=true;
             if(cash<deal.down){ShowLoanOffer(deal,big);return;}
             cash-=deal.down;passive+=deal.flow;CloseModal();Log("Bought "+deal.title+". Passive income +"+Money(deal.flow));CheckEscape();Refresh();PurchaseCelebration(deal);
-        });buy.gameObject.name="Buy Deal";buy.interactable=true;Place(buy.GetComponent<RectTransform>(),140,-198,300,54);SetButtonText(buy,Color.white,18);
-        var pass=Button(card.transform,"PASS",C("#e8dcc5"),()=>{if(resolved)return;resolved=true;CloseModal();Log("Passed on "+deal.title);});pass.gameObject.name="Pass Deal";Place(pass.GetComponent<RectTransform>(),-190,-198,230,54);SetButtonText(pass,C("#51445b"),18);
+        });buy.gameObject.name="Buy Deal";buy.interactable=true;Place(buy.GetComponent<RectTransform>(),190,-245,350,54);SetButtonText(buy,Color.white,18);
+        var pass=Button(card.transform,"PASS",C("#e8dcc5"),()=>{if(resolved)return;resolved=true;CloseModal();Log("Passed on "+deal.title);});pass.gameObject.name="Pass Deal";Place(pass.GetComponent<RectTransform>(),-230,-245,270,54);SetButtonText(pass,C("#51445b"),18);
     }
     void PurchaseCelebration(Deal deal)
     {
         var toast=Panel(uiRoot,Vector2.one*.5f,Vector2.one*.5f,new Vector2(520,88),C("#21756a"));
         toast.name="Property Acquired";Place(toast.GetComponent<RectTransform>(),0,230,520,88);
         toast.GetComponent<Image>().sprite=RoundedSprite();
-        var text=Label(toast.transform,"PROPERTY ACQUIRED!\n"+deal.title+"  •  +"+Money(deal.flow)+" / month",20);Stretch(text.rectTransform);
+        var text=Label(toast.transform,"INVESTMENT ACQUIRED!\n"+deal.title+"  •  +"+Money(deal.flow)+" / month",20);Stretch(text.rectTransform);
         foreach(var graphic in toast.GetComponentsInChildren<Graphic>())graphic.raycastTarget=false;
         toast.AddComponent<CardReveal>().Play(world.ReducedMotion);
         if(!world.ReducedMotion)CardSparkles.Create(toast.transform);
@@ -83,9 +89,9 @@ public partial class CashflowGame
         yield return new WaitForSecondsRealtime(2);
         if(toast!=null)Destroy(toast);
     }
-    void CardStat(Transform parent,string caption,string value,float y,Color color)
+    void DealFigure(Transform parent,string caption,string value,float x,float y,Color color)
     {
-        var label=Label(parent,caption,13,TextAnchor.MiddleLeft);label.color=C("#6a6071");Place(label.rectTransform,110,y+24,390,23);
-        var amount=Label(parent,value,29,TextAnchor.MiddleLeft);amount.color=color;amount.fontStyle=FontStyle.Bold;Place(amount.rectTransform,110,y-7,390,40);
+        var label=Label(parent,caption,13,TextAnchor.MiddleLeft);label.color=C("#6a6071");Place(label.rectTransform,x,y+15,390,23);
+        var amount=Label(parent,value,29,TextAnchor.MiddleLeft);amount.color=color;amount.fontStyle=FontStyle.Bold;Place(amount.rectTransform,x,y-17,390,40);
     }
 }

@@ -12,7 +12,12 @@ using Random = UnityEngine.Random;
 public partial class CashflowGame : MonoBehaviour
 {
     [Serializable] public class Profession { public string name; public int salary, savings, taxes, mortgagePay, schoolPay, carPay, cardPay, retailPay, other, childPay; }
-    [Serializable] public class Deal { public string title; public int down, flow; public Deal(string t, int d, int f) { title=t; down=d; flow=f; } }
+    [Serializable] public class Deal
+    {
+        public string title, description;
+        public int down, flow;
+        public Deal(string t, int d, int f, string story = "") { title=t; down=d; flow=f; description=story; }
+    }
 
     Profession[] professions = {
         new Profession { name="Engineer", salary=4900, savings=400, taxes=1050, mortgagePay=400, schoolPay=60, carPay=80, cardPay=120, retailPay=50, other=1090, childPay=250 },
@@ -25,8 +30,14 @@ public partial class CashflowGame : MonoBehaviour
     readonly int[] dreamGoals = { 125000, 175000, 220000, 140000, 130000, 250000, 90000, 200000 };
     readonly string[] ratTiles = { "OPPORTUNITY", "DOODAD", "OPPORTUNITY", "CHARITY", "OPPORTUNITY", "PAYDAY", "OPPORTUNITY", "MARKET", "OPPORTUNITY", "DOODAD", "OPPORTUNITY", "BABY", "OPPORTUNITY", "PAYDAY", "OPPORTUNITY", "MARKET", "OPPORTUNITY", "DOODAD", "OPPORTUNITY", "DOWNSIZED", "OPPORTUNITY", "PAYDAY", "OPPORTUNITY", "MARKET" };
     readonly string[] fastTiles = { "CASHFLOW DAY", "BIO-TECH +25K", "DREAM", "PIZZA +18K", "TAX AUDIT", "DREAM", "CASHFLOW DAY", "GOLF +35K", "DREAM", "CLOUD +40K", "LAWSUIT", "DREAM", "CASHFLOW DAY", "CAR WASH +15K", "DREAM", "EV +30K", "DIVORCE", "DREAM", "CASHFLOW DAY", "CARGO +28K", "DREAM", "HOTEL +22K", "CORRECTION", "DREAM" };
-    readonly Deal[] smallDeals = { new Deal("2/1 Condo", 4000, 220), new Deal("3/2 House", 5000, 250), new Deal("Vending Route", 4000, 350), new Deal("Micro SaaS", 3000, 400) };
-    readonly Deal[] bigDeals = { new Deal("4-Plex", 10000, 800), new Deal("Pizza Franchise", 35000, 3000) };
+    readonly Deal[] smallDeals = {
+        new Deal("2/1 Condo", 4000, 220, "A two-bedroom, one-bathroom condo offers rental income. Your upfront payment gives you a monthly income stream from the property."),
+        new Deal("3/2 House", 5000, 250, "A three-bedroom, two-bathroom house is available as a rental investment. Put money into the property now to receive ongoing rental cashflow."),
+        new Deal("Vending Route", 4000, 350, "Invest in a route of vending machines serving local customers. The business provides monthly cashflow from its sales."),
+        new Deal("Micro SaaS", 3000, 400, "Invest in a small subscription software business. Recurring customer subscriptions provide the monthly cashflow shown below.") };
+    readonly Deal[] bigDeals = {
+        new Deal("4-Plex", 10000, 800, "Invest in a building with four rental homes. Its combined rental cashflow provides a larger monthly income stream for a larger upfront payment."),
+        new Deal("Pizza Franchise", 35000, 3000, "Invest in a pizza franchise serving local customers. This business needs a substantial upfront payment and produces monthly operating cashflow.") };
 
     Profession profession; string dream; int selectedDream; int cash, passive, children, position, fastPosition, fastFlow; bool fastTrack, charity; int skipTurns; int bankLoan;
     BoardWorld world; Button rollButton; bool rolling; GameObject modal;
