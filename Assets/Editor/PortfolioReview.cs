@@ -58,7 +58,7 @@ public static class PortfolioReview
                     Call("OfferDeal",deal,false);Click("Buy Deal");Click("Pass Loan");Require(Assets.Count==3,"Loan cancellation created asset");
                     Call("OfferDeal",deal,false);Click("Buy Deal");Click("Confirm Loan");
                     Require(Assets.Count==4&&(int)Get("passive")==880,"Portfolio income sum");
-                    Set("cash",10000);Call("ShowStatement");Click("Repay Loan");
+                    Set("cash",10000);Call("ShowStatement");Click("Repay Loan");Click("Confirm Repayment");
                     Require(Assets[2].outstandingBankLoan==3000&&Assets[3].outstandingBankLoan==4000&&(int)Get("bankLoan")==7000,"Repayment allocation");
                     Click("Open Portfolio");break;
                 case 4:Capture("portfolio");break;

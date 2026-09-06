@@ -92,7 +92,7 @@ public static class DealReview
                     Call("Payday");Require(Get("cash")==400+expected,"Payday excludes interest");Set("cash",5000);Call("ShowStatement");break;
                 case 19:
                     int oldExpenses=(int)typeof(CashflowGame).GetMethod("Expenses",Flags).Invoke(Game,null);
-                    var repay=GameObject.Find("Repay Loan").GetComponent<Button>();repay.onClick.Invoke();repay.onClick.Invoke();
+                    Click("Repay Loan");var repay=GameObject.Find("Confirm Repayment").GetComponent<Button>();repay.onClick.Invoke();repay.onClick.Invoke();
                     Require(Get("bankLoan")==3000&&Get("cash")==4000,"Principal repayment accounting failed");
                     Require((int)typeof(CashflowGame).GetMethod("Expenses",Flags).Invoke(Game,null)==oldExpenses-100,"Repayment did not reduce interest");break;
                 case 20:ScreenCapture.CaptureScreenshot(Folder+"/finances.png");break;

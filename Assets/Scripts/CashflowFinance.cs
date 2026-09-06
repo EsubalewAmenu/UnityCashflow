@@ -51,12 +51,10 @@ public partial class CashflowGame
         FinanceRow(card.transform,"Living expenses",Money(Expenses()-LoanPayment()),-31);
         FinanceRow(card.transform,"Bank loan interest / month",Money(LoanPayment()),-73);
         FinanceRow(card.transform,"Outstanding bank loan",Money(bankLoan),-115);
-        var freedom=Label(card.transform,"FINANCIAL FREEDOM  "+Mathf.RoundToInt(Mathf.Clamp01(passive/(float)Mathf.Max(1,Expenses()))*100)+"%",15);freedom.color=C("#21756a");Place(freedom.rectTransform,0,-164,680,28);
-        bool repaid=false;
-        var repay=Button(card.transform,"REPAY $1,000",C("#654174"),()=>
-        {
-            if(repaid||bankLoan<1000||cash<1000)return;repaid=true;RepayInvestmentLoan(1000);CheckEscape();Refresh();ShowStatement();
-        });repay.name="Repay Loan";repay.interactable=bankLoan>=1000&&cash>=1000;Place(repay.GetComponent<RectTransform>(),-245,-230,220,52);SetButtonText(repay,Color.white,18);
+        var expenses=Button(card.transform,"EXPENSE DETAILS",C("#e8dcc5"),ShowExpenseDetails);expenses.name="Expense Details";Place(expenses.GetComponent<RectTransform>(),-245,-170,220,44);SetButtonText(expenses,C("#51445b"),16);
+        var debts=Button(card.transform,"YOUR DEBTS",C("#e8dcc5"),()=>ShowDebts(0));debts.name="Your Debts";Place(debts.GetComponent<RectTransform>(),0,-170,220,44);SetButtonText(debts,C("#51445b"),16);
+        var borrow=Button(card.transform,"BORROW",C("#e8dcc5"),()=>ShowBankBorrow(1000));borrow.name="Borrow Money";Place(borrow.GetComponent<RectTransform>(),245,-170,220,44);SetButtonText(borrow,C("#51445b"),16);
+        var repay=Button(card.transform,"REPAY BANK LOAN",C("#654174"),()=>ShowDebtRepayment(-1));repay.name="Repay Loan";repay.interactable=bankLoan>=1000;Place(repay.GetComponent<RectTransform>(),-245,-230,220,52);SetButtonText(repay,Color.white,16);
         var assets=Button(card.transform,"PORTFOLIO",C("#654174"),()=>ShowPortfolio(0));assets.name="Open Portfolio";Place(assets.GetComponent<RectTransform>(),0,-230,220,52);SetButtonText(assets,Color.white,18);
         var done=Button(card.transform,"BACK TO BOARD",C("#21756a"),CloseModal);done.name="Close Finances";Place(done.GetComponent<RectTransform>(),245,-230,220,52);SetButtonText(done,Color.white,18);
     }

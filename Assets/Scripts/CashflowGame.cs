@@ -11,7 +11,7 @@ using Random = UnityEngine.Random;
 // It builds its playable UI at runtime; no manually wired scene is required.
 public partial class CashflowGame : MonoBehaviour
 {
-    [Serializable] public class Profession { public string name; public int salary, savings, taxes, mortgagePay, schoolPay, carPay, cardPay, retailPay, other, childPay; }
+    [Serializable] public class Profession { public string name; public int salary, savings, taxes, mortgagePay, schoolPay, carPay, cardPay, retailPay, other, childPay, mortgageBalance, schoolBalance, carBalance, cardBalance, retailBalance; }
     [Serializable] public class Deal
     {
         public string title, description;
@@ -20,11 +20,11 @@ public partial class CashflowGame : MonoBehaviour
     }
 
     Profession[] professions = {
-        new Profession { name="Engineer", salary=4900, savings=400, taxes=1050, mortgagePay=400, schoolPay=60, carPay=80, cardPay=120, retailPay=50, other=1090, childPay=250 },
-        new Profession { name="Teacher", salary=3300, savings=400, taxes=630, mortgagePay=500, schoolPay=60, carPay=60, cardPay=90, retailPay=50, other=760, childPay=180 },
-        new Profession { name="Medical Doctor", salary=13200, savings=400, taxes=3420, mortgagePay=1900, schoolPay=750, carPay=380, cardPay=270, retailPay=50, other=2880, childPay=640 },
-        new Profession { name="Janitor", salary=1600, savings=560, taxes=280, mortgagePay=200, schoolPay=0, carPay=60, cardPay=60, retailPay=50, other=300, childPay=70 },
-        new Profession { name="Lawyer", salary=7500, savings=400, taxes=1830, mortgagePay=1100, schoolPay=390, carPay=220, cardPay=180, retailPay=50, other=1650, childPay=380 }
+        new Profession { name="Engineer", mortgageBalance=75000, schoolBalance=12000, carBalance=4000, cardBalance=2000, retailBalance=1000, salary=4900, savings=400, taxes=1050, mortgagePay=400, schoolPay=60, carPay=80, cardPay=120, retailPay=50, other=1090, childPay=250 },
+        new Profession { name="Teacher", mortgageBalance=90000, schoolBalance=12000, carBalance=4000, cardBalance=2000, retailBalance=1000, salary=3300, savings=400, taxes=630, mortgagePay=500, schoolPay=60, carPay=60, cardPay=90, retailPay=50, other=760, childPay=180 },
+        new Profession { name="Medical Doctor", mortgageBalance=202000, schoolBalance=150000, carBalance=19000, cardBalance=9000, retailBalance=1000, salary=13200, savings=400, taxes=3420, mortgagePay=1900, schoolPay=750, carPay=380, cardPay=270, retailPay=50, other=2880, childPay=640 },
+        new Profession { name="Janitor", mortgageBalance=20000, carBalance=4000, cardBalance=2000, retailBalance=1000, salary=1600, savings=560, taxes=280, mortgagePay=200, schoolPay=0, carPay=60, cardPay=60, retailPay=50, other=300, childPay=70 },
+        new Profession { name="Lawyer", mortgageBalance=115000, schoolBalance=78000, carBalance=11000, cardBalance=6000, retailBalance=1000, salary=7500, savings=400, taxes=1830, mortgagePay=1100, schoolPay=390, carPay=220, cardPay=180, retailPay=50, other=1650, childPay=380 }
     };
     readonly string[] dreams = { "Stock Market for Kids", "Save the Coral Reefs", "Private Superyacht", "African Wildlife Sanctuary", "Heli-Skiing Chalet", "Private Tropical Island", "7 Wonders Expedition", "Community Health Clinic" };
     readonly int[] dreamGoals = { 125000, 175000, 220000, 140000, 130000, 250000, 90000, 200000 };
@@ -104,7 +104,7 @@ public partial class CashflowGame : MonoBehaviour
     void BuildCanvas() { var root=new GameObject("Cashflow Unity",typeof(Canvas),typeof(CanvasScaler),typeof(GraphicRaycaster)); canvas=root.GetComponent<Canvas>(); canvas.renderMode=RenderMode.ScreenSpaceOverlay; var scaler=root.GetComponent<CanvasScaler>(); scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution=new Vector2(1280,720); scaler.matchWidthOrHeight=.5f; uiRoot=new GameObject("Safe Area",typeof(RectTransform),typeof(SafeBoardLayout)).GetComponent<RectTransform>(); uiRoot.SetParent(root.transform,false); var bg=new GameObject("Background",typeof(Image)); bg.transform.SetParent(uiRoot,false); bg.GetComponent<Image>().color=C("#0b1220"); Stretch(bg.GetComponent<RectTransform>()); }
     void ClearUI() { foreach(Transform child in uiRoot) if(child.name!="Background"){child.gameObject.SetActive(false);Destroy(child.gameObject);} }
     void SetButtonText(Button button, Color color, int size) { var text=button.GetComponentInChildren<Text>(); if(text!=null){text.color=color;text.fontSize=size;text.fontStyle=FontStyle.Bold;} }
-    void StartGame(){ if(profession==null)LoadProfessionSelection(); selectedDream=Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream",0),0,dreams.Length-1); dream=dreams[selectedDream]; cash=profession.savings; portfolio.Clear(); passive=0;children=0;position=0;fastPosition=0;fastFlow=0;fastTrack=false;charity=false;skipTurns=0;bankLoan=0;BuildGame(); Log("Welcome, "+profession.name+". Roll the dice to begin."); }
+    void StartGame(){ if(profession==null)LoadProfessionSelection(); selectedDream=Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream",0),0,dreams.Length-1); dream=dreams[selectedDream]; cash=profession.savings; portfolio.Clear(); passive=0;children=0;position=0;fastPosition=0;fastFlow=0;fastTrack=false;charity=false;skipTurns=0;bankLoan=0;ResetPersonalDebts();BuildGame(); Log("Welcome, "+profession.name+". Roll the dice to begin."); }
     void BuildGame()
     {
         if(world!=null){world.gameObject.SetActive(false);Destroy(world.gameObject);}
@@ -316,7 +316,7 @@ public partial class CashflowGame : MonoBehaviour
             else{int lost=cash-cash/2;cash=Mathf.Max(0,cash/2);Log("Fast Track hazard reduced cash.");ShowEventPanel("FAST TRACK HAZARD","A setback reduced your available cash.\n\nLost: "+Money(lost),C("#b91c1c"));}
         }
     }
-    int Expenses(){return profession.taxes+profession.mortgagePay+profession.schoolPay+profession.carPay+profession.cardPay+profession.retailPay+profession.other+children*profession.childPay+LoanPayment();}
+    int Expenses(){return profession.taxes+PersonalDebtPayments()+profession.other+children*profession.childPay+LoanPayment();}
     int Income(){return (fastTrack?fastFlow:profession.salary)+passive;}
     void Payday(){int amount=Income()-Expenses();cash+=amount;Log("PAYDAY: collected "+Money(amount));}
     void CheckEscape(){if(!fastTrack&&passive>Expenses()){fastTrack=true;cash=passive*100;DrawBoard();Log("You escaped the Rat Race! Welcome to the Fast Track.");}}

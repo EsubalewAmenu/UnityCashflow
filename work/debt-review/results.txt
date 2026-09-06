@@ -1,0 +1,1 @@
+PASS: all profession starting expenses; expense and debt UI; repayment preview/cancel; full payoff; duplicate guards; affordability; Payday after payoff; standalone borrowing; bank repayment; reset and text fit.
