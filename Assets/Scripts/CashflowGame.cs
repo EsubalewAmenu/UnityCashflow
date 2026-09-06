@@ -277,12 +277,20 @@ public partial class CashflowGame : MonoBehaviour
         int old=fastTrack?fastPosition:position;
         yield return world.MovePawn(old,die,fastTrack);
         if(fastTrack)fastPosition=(old+die)%24;else position=(old+die)%24;
-        if(!fastTrack&&old+die>=24)Payday();
+        CollectMovementPaydays(old,die);
         Land(fastTrack?fastTiles[fastPosition]:ratTiles[position]);Refresh();rolling=false;rollButton.interactable=modal==null;
+    }
+    // Include the destination, but never the starting space. Movement owns the
+    // payment so landing on Payday cannot collect it a second time.
+    void CollectMovementPaydays(int start,int steps)
+    {
+        if(fastTrack)return;
+        for(int step=1;step<=steps;step++)
+            if(ratTiles[(start+step)%ratTiles.Length]=="PAYDAY")Payday();
     }
     void Land(string tile)
     {
-        if(tile=="PAYDAY"){ Payday(); ShowEventPanel("PAYDAY","Your monthly cashflow was added to cash.\n\nCollected: "+Money(Income()-Expenses()),C("#a16207")); return; }
+        if(tile=="PAYDAY"){ ShowEventPanel("PAYDAY","Your monthly cashflow was added to cash.\n\nCollected: "+Money(Income()-Expenses()),C("#a16207")); return; }
         if(tile=="OPPORTUNITY"){ ShowDealChoice(); return; }
         if(tile=="DOODAD"){ int cost=Random.Range(100,1001); cash-=cost; Log("Doodad: paid "+Money(cost)); ShowEventPanel("DOODAD","Unexpected expense paid.\n\nCost: "+Money(cost),C("#b91c1c")); return; }
         if(tile=="CHARITY"){ShowCharityChoice();return;}

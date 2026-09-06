@@ -1,0 +1,1 @@
+PASS: 312 starting-position/roll cases; passing, landing, no double payment, multiple Paydays, wrap without Payday, zero movement, loan interest, negative cashflow, two laps, and Fast Track isolation.
