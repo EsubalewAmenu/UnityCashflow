@@ -34,3 +34,9 @@ sysinfo.txt
 Thumbs.db
 outputs/*
 outputs/3d/*
+
+# Local Android SDK downloads and device builds
+work/sdk-downloads/
+work/android-ndk-r23b-windows.zip
+work/android-repository.xml
+work/android-build/
