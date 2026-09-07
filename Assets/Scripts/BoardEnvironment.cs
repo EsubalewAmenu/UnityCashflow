@@ -167,7 +167,7 @@ public sealed class BoardEnvironment : MonoBehaviour
         foreach(var entry in batches)
         {
             var mesh=new Mesh{name="City geometry "+entry.Key,indexFormat=IndexFormat.UInt32};mesh.SetVertices(entry.Value.vertices);mesh.SetTriangles(entry.Value.triangles,0);mesh.RecalculateNormals();mesh.RecalculateBounds();owned.Add(mesh);
-            var material=new Material(Shader.Find("Standard"));ColorUtility.TryParseHtmlString(entry.Key,out var c);material.color=c;material.SetFloat("_Glossiness",entry.Key==Glass?.38f:.12f);owned.Add(material);
+            var material=BoardMaterials.CreateSurface();ColorUtility.TryParseHtmlString(entry.Key,out var c);material.color=c;material.SetFloat("_Glossiness",entry.Key==Glass?.38f:.12f);owned.Add(material);
             var go=new GameObject("City finish "+entry.Key,typeof(MeshFilter),typeof(MeshRenderer));go.transform.SetParent(transform,false);go.GetComponent<MeshFilter>().sharedMesh=mesh;go.GetComponent<MeshRenderer>().sharedMaterial=material;
         }
         batches.Clear();

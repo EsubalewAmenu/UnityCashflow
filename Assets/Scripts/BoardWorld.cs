@@ -71,7 +71,7 @@ public sealed class BoardWorld : MonoBehaviour
 
     Material Mat(string hex,float metal=0,float gloss=.1f)
     {
-        var m=new Material(Shader.Find("Standard")); m.color=Hex(hex); m.SetFloat("_Metallic",metal);m.SetFloat("_Glossiness",gloss);materials.Add(m);return m;
+        var m=BoardMaterials.CreateSurface(); m.color=Hex(hex); m.SetFloat("_Metallic",metal);m.SetFloat("_Glossiness",gloss);materials.Add(m);return m;
     }
     static Color Hex(string value){ColorUtility.TryParseHtmlString(value,out var c);return c;}
     GameObject Shape(string name,PrimitiveType type,Transform parent,Vector3 p,Vector3 scale,Material mat,bool collision=false)
