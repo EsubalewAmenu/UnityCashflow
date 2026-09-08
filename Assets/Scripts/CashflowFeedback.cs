@@ -14,7 +14,7 @@ public partial class CashflowGame
         eventReceipt.Detail=Label(panel.transform,"",11);Place(eventReceipt.Detail.rectTransform,0,-12,460,20);
     }
     void Receipt(string title,string detail,Color color){if(eventReceipt!=null)eventReceipt.Show(title,detail,color);}
-    class HistoryEntry { public string message,changes; }
+    [System.Serializable] class HistoryEntry { public string message,changes; }
     readonly List<HistoryEntry> history=new List<HistoryEntry>();
     int historyCash,historyFlow,historyDebt,lastRoll;
     void ResetHistory(){history.Clear();historyCash=cash;historyFlow=Income()-Expenses();historyDebt=bankLoan;lastRoll=0;}
@@ -75,6 +75,7 @@ public partial class CashflowGame
     {
         int loan=Mathf.CeilToInt(Mathf.Max(0,cost-cash)/1000f)*1000;
         var card=CardShell("ONE-TIME BILL • REVIEW",title,C("#a84036"),new Vector2(900,590));
+        pendingDecision=new PendingDecision{kind="bill",title=title,detail=reason,amount=cost,turns=turns};
         var story=Label(card.transform,reason,22);story.color=C("#51445b");Place(story.rectTransform,0,145,810,70);
         FinanceRow(card.transform,"One-time payment",Money(cost),80);FinanceRow(card.transform,"Available cash",Money(cash),35);
         FinanceRow(card.transform,"Required bank borrowing",Money(loan),-10);FinanceRow(card.transform,"Cash after payment",Money(cash+loan-cost),-55);

@@ -27,7 +27,7 @@ public partial class CashflowGame
                 var swap=pile[i];pile[i]=pile[j];pile[j]=swap;
             }
             // A fresh shuffle must not immediately repeat the last discarded card.
-            if(pile.Count>1 && pile[pile.Count-1]==previous)
+            if(pile.Count>1 && previous!=null && pile[pile.Count-1].title==previous.title)
             {
                 var swap=pile[0];pile[0]=pile[pile.Count-1];pile[pile.Count-1]=swap;
             }

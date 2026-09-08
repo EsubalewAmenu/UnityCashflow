@@ -11,6 +11,7 @@ public partial class CashflowGame
     {
         int donation=Mathf.Max(100,Income()/10);bool resolved=false;
         var card=CardShell("CHARITY • YOUR CHOICE","Give a little. Make a difference.",C("#a56b26"),new Vector2(740,450));
+        pendingDecision=new PendingDecision{kind="charity"};
         var copy=Label(card.transform,"Donate "+Money(donation)+" to roll two dice on your next roll.\nOr pass and continue with one die.",22);copy.color=C("#51445b");Place(copy.rectTransform,0,30,660,90);
         var amount=Label(card.transform,"YOUR DONATION  "+Money(donation),29);amount.color=C("#21756a");amount.fontStyle=FontStyle.Bold;Place(amount.rectTransform,0,-45,650,46);
         var balance=Label(card.transform,cash>=donation?"Cash after donating: "+Money(cash-donation):"Available cash: "+Money(cash)+" • Not enough to donate",16);balance.color=C("#6a6071");Place(balance.rectTransform,0,-99,650,30);
@@ -24,6 +25,7 @@ public partial class CashflowGame
     {
         int principal=LoanNeeded(deal),payment=principal/10;bool resolved=false;
         var card=CardShell("BANK LOAN • REVIEW BEFORE BUYING",deal.title,C("#654174"),new Vector2(900,590));
+        pendingDecision=new PendingDecision{kind="loan",deal=deal,big=big};
         FinanceRow(card.transform,"Deal upfront payment",Money(deal.down),140);
         FinanceRow(card.transform,"Deal monthly income",Money(deal.flow)+" / mo",98);
         FinanceRow(card.transform,"Borrow",Money(principal),56);

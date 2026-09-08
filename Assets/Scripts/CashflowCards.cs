@@ -21,6 +21,7 @@ public partial class CashflowGame
     void ShowDealChoice()
     {
         var card=CardShell("OPPORTUNITY","Choose your deal",C("#a56b26"),new Vector2(800,480));
+        pendingDecision=new PendingDecision{kind="choice"};
         var hint=Label(card.transform,"Pick a deck. Review the opportunity, then buy or pass.",17);hint.color=C("#6a6071");Place(hint.rectTransform,0,105,720,30);
         DealDeck(card.transform,false,-185);DealDeck(card.transform,true,185);
     }
@@ -51,6 +52,7 @@ public partial class CashflowGame
     {
         Color accent=C(big?"#654174":"#21756a");
         var card=CardShell(big?"BIG DEAL • OPPORTUNITY":"SMALL DEAL • OPPORTUNITY",deal.title,accent,new Vector2(900,590),true);
+        pendingDecision=new PendingDecision{kind="deal",deal=deal,big=big};
         AddDecisionReview(card);
         AddDealExplanation(card,deal);
         var story=Label(card.transform,string.IsNullOrWhiteSpace(deal.description)?"Review the upfront payment and monthly income before deciding whether this investment fits your budget.":deal.description,19,TextAnchor.MiddleLeft);

@@ -26,7 +26,7 @@ public partial class CashflowGame
         var shadow=title.gameObject.AddComponent<Shadow>();shadow.effectColor=C("#443050");shadow.effectDistance=new Vector2(1,-2);
         var previous=OpeningButton(uiRoot,"‹",()=>ChangeOpeningSelection(dreamsPage,-1));previous.name="Previous Selection";Place(previous.GetComponent<RectTransform>(),-589,-20,54,74);SetButtonText(previous,C("#443050"),40);
         var next=OpeningButton(uiRoot,"›",()=>ChangeOpeningSelection(dreamsPage,1));next.name="Next Selection";Place(next.GetComponent<RectTransform>(),589,-20,54,74);SetButtonText(next,C("#443050"),40);
-        AddRandomStart();
+        AddRandomStart();if(!dreamsPage)AddResumeButton();
         if(dreamsPage){var back=OpeningButton(uiRoot,"‹  PROFESSION",ShowSetup);back.name="Back to Profession";Place(back.GetComponent<RectTransform>(),-495,301,210,44);SetButtonText(back,C("#443050"),14);}
     }
     Button OpeningButton(Transform parent,string title,Action action)
@@ -62,7 +62,7 @@ public partial class CashflowGame
             OpeningCard(slot,dreams[index],art,"YOUR DREAM GOAL",Money(dreamGoals[index]),()=>{selectedDream=index;PlayerPrefs.SetInt("CashflowDream",index);ShowDreams();},true);
         }
         OpeningSummary("YOUR PROFESSION",profession.name,"YOUR DREAM",(selectedDream+1)+" / "+dreams.Length,"TARGET",Money(dreamGoals[selectedDream]));
-        var start=OpeningButton(uiRoot,"START GAME  →",()=>{PlayerPrefs.SetInt("CashflowDream",selectedDream);PlayerPrefs.Save();SceneManager.LoadScene("GameBoard");});start.name="Start Selected Game";start.GetComponent<Image>().color=C("#579342");Place(start.GetComponent<RectTransform>(),465,-290,260,64);SetButtonText(start,Color.white,23);
+        var start=OpeningButton(uiRoot,"START GAME  →",()=>ConfirmNewGame(()=>{PlayerPrefs.SetInt("CashflowDream",selectedDream);PlayerPrefs.Save();SceneManager.LoadScene("GameBoard");}));start.name="Start Selected Game";start.GetComponent<Image>().color=C("#579342");Place(start.GetComponent<RectTransform>(),465,-290,260,64);SetButtonText(start,Color.white,23);
     }
     void OpeningCard(int slot,string title,Sprite art,string caption,string value,Action select,bool dreamsPage)
     {

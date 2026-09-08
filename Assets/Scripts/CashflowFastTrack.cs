@@ -7,6 +7,7 @@ public partial class CashflowGame
     void ShowFastTrackIntro()
     {
         var card=CardShell("FAST TRACK","You escaped the Rat Race",C("#21756a"),new Vector2(900,590));
+        pendingDecision=new PendingDecision{kind="intro"};
         var copy=Label(card.transform, "Your investment income exceeds your expenses.\nCash, investments and debts carry over. Salary stops.\nCollect net investment cashflow when passing or landing on Cashflow Day.\nBuy businesses to grow income, then buy "+dream+" for "+Money(dreamGoals[selectedDream])+" on a Dream space.",23);copy.color=C("#51445b");Place(copy.rectTransform,0,0,810,320);
         var done=Button(card.transform,"CONTINUE",C("#21756a"),CloseModal);Place(done.GetComponent<RectTransform>(),0,-240,320,52);SetButtonText(done,Color.white,18);
     }
@@ -36,6 +37,7 @@ public partial class CashflowGame
     {
         int cost=dreamGoals[selectedDream];
         var card=CardShell("YOUR DREAM • FINAL GOAL",dream,C("#654174"),new Vector2(900,590));
+        pendingDecision=new PendingDecision{kind="dream"};
         FinanceRow(card.transform,"Dream purchase price",Money(cost),120);
         FinanceRow(card.transform,"Available cash",Money(cash),65);
         FinanceRow(card.transform,"Cash after purchase",Money(cash-cost),10);

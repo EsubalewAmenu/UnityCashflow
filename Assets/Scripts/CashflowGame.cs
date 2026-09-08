@@ -65,7 +65,7 @@ public partial class CashflowGame : MonoBehaviour
     {
         if (sceneName == "ProfessionSelection") ShowSetup();
         else if (sceneName == "DreamSelection") ShowDreams();
-        else if (sceneName == "GameBoard") StartGame();
+        else if (sceneName == "GameBoard") { if(resumeRequested){resumeRequested=false;ResumeGame();}else StartGame(); }
         else ShowSetup();
     }
     void GoToDreamSelection()
@@ -115,12 +115,12 @@ public partial class CashflowGame : MonoBehaviour
         return sprite;
     }
     Text Label(Transform parent, string value, int size, TextAnchor align = TextAnchor.MiddleCenter) { var go=new GameObject("Text",typeof(RectTransform),typeof(Text)); go.transform.SetParent(parent,false); var t=go.GetComponent<Text>(); t.font=Font(); t.text=value; t.fontSize=size; t.alignment=align; t.color=Color.white; t.horizontalOverflow=HorizontalWrapMode.Wrap; t.verticalOverflow=VerticalWrapMode.Overflow; t.raycastTarget=false; return t; }
-    Button Button(Transform parent,string title,Color color,Action action) { var go=new GameObject(title,typeof(RectTransform),typeof(Image),typeof(Button)); go.transform.SetParent(parent,false); go.GetComponent<Image>().color=color; var b=go.GetComponent<Button>(); b.onClick.AddListener(()=>action()); var tx=Label(go.transform,title,16); Stretch(tx.rectTransform); return b; }
+    Button Button(Transform parent,string title,Color color,Action action) { var go=new GameObject(title,typeof(RectTransform),typeof(Image),typeof(Button)); go.transform.SetParent(parent,false); go.GetComponent<Image>().color=color; var b=go.GetComponent<Button>(); b.onClick.AddListener(()=>{action();SaveCheckpoint();}); var tx=Label(go.transform,title,16); Stretch(tx.rectTransform); return b; }
     void Stretch(RectTransform r) { r.anchorMin=Vector2.zero;r.anchorMax=Vector2.one;r.offsetMin=new Vector2(5,4);r.offsetMax=new Vector2(-5,-4); }
     void BuildCanvas() { var root=new GameObject("Cashflow Unity",typeof(Canvas),typeof(CanvasScaler),typeof(GraphicRaycaster)); canvas=root.GetComponent<Canvas>(); canvas.renderMode=RenderMode.ScreenSpaceOverlay; var scaler=root.GetComponent<CanvasScaler>(); scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution=new Vector2(1280,720); scaler.matchWidthOrHeight=.5f; uiRoot=new GameObject("Safe Area",typeof(RectTransform),typeof(SafeBoardLayout)).GetComponent<RectTransform>(); uiRoot.SetParent(root.transform,false); var bg=new GameObject("Background",typeof(Image)); bg.transform.SetParent(uiRoot,false); bg.GetComponent<Image>().color=C("#0b1220"); Stretch(bg.GetComponent<RectTransform>()); }
     void ClearUI() { foreach(Transform child in uiRoot) if(child.name!="Background"){child.gameObject.SetActive(false);Destroy(child.gameObject);} }
     void SetButtonText(Button button, Color color, int size) { var text=button.GetComponentInChildren<Text>(); if(text!=null){text.color=color;text.fontSize=size;text.fontStyle=FontStyle.Bold;} }
-    void StartGame(){ if(profession==null)LoadProfessionSelection(); selectedDream=Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream",0),0,dreams.Length-1); dream=dreams[selectedDream]; cash=profession.savings; portfolio.Clear(); passive=0;children=0;position=0;fastPosition=0;fastTrack=false;charity=false;skipTurns=0;bankLoan=0;gameWon=false;fastTrackIntro=false;ResetPersonalDebts();ResetHistory();ResetDealDecks();BuildGame(); }
+    void StartGame(){ if(profession==null)LoadProfessionSelection(); selectedDream=Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream",0),0,dreams.Length-1); dream=dreams[selectedDream]; cash=profession.savings; portfolio.Clear(); passive=0;children=0;position=0;fastPosition=0;fastTrack=false;charity=false;skipTurns=0;bankLoan=0;gameWon=false;fastTrackIntro=false;ResetPersonalDebts();ResetHistory();ResetDealDecks();pendingDecision=new PendingDecision();BuildGame();saveActive=true;lastSavedPayload=null;SaveCheckpoint(); }
     void BuildGame()
     {
         if(world!=null){world.gameObject.SetActive(false);Destroy(world.gameObject);}
@@ -206,7 +206,7 @@ public partial class CashflowGame : MonoBehaviour
         var panel=Panel(modal.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),size,C("#302540"));panel.GetComponent<Image>().sprite=RoundedSprite();panel.GetComponent<Image>().type=Image.Type.Sliced;
         if(world!=null)world.InputBlocked=true;if(rollButton!=null)rollButton.interactable=false;return panel;
     }
-    void CloseModal(){if(modal!=null){modal.SetActive(false);Destroy(modal);modal=null;}if(world!=null)world.InputBlocked=false;if(rollButton!=null)rollButton.interactable=!rolling;}
+    void CloseModal(){pendingDecision=new PendingDecision();if(modal!=null){modal.SetActive(false);Destroy(modal);modal=null;}if(world!=null)world.InputBlocked=false;if(rollButton!=null)rollButton.interactable=!rolling;}
     GameObject Panel(Transform p,Vector2 aMin,Vector2 aMax,Vector2 size,Color c){var go=new GameObject("Panel",typeof(RectTransform),typeof(Image));go.transform.SetParent(p,false);var r=go.GetComponent<RectTransform>();r.anchorMin=aMin;r.anchorMax=aMax;r.sizeDelta=size;go.GetComponent<Image>().color=c;return go;}
     void Place(RectTransform r,float x,float y,float w,float h){r.anchorMin=r.anchorMax=new Vector2(.5f,.5f);r.anchoredPosition=new Vector2(x,y);r.sizeDelta=new Vector2(w,h);}
     void DrawBoard()
@@ -285,6 +285,7 @@ public partial class CashflowGame : MonoBehaviour
     void ShowEventPanel(string title, string details, Color color)
     {
         var shade=CardShell("BOARD EVENT",title,color,new Vector2(700,440));
+        pendingDecision=new PendingDecision{kind="event",title=title,detail=details,color=color};
         var copy=Label(shade.transform,details,23);copy.color=C("#40394c");Place(copy.rectTransform,0,-5,610,170);
         var ok=Button(shade.transform,"CONTINUE",color,CloseModal);Place(ok.GetComponent<RectTransform>(),0,-165,260,54);SetButtonText(ok,Color.white,18);
 
@@ -307,14 +308,15 @@ public partial class CashflowGame : MonoBehaviour
     void Roll(){if(gameWon||rolling||modal!=null)return;if(fastTrackIntro){fastTrackIntro=false;ShowFastTrackIntro();return;}if(skipTurns>0){skipTurns--;Log("Downsized: turn skipped ("+skipTurns+" left).");Refresh();ShowEventPanel("TURN SKIPPED",skipTurns>0?skipTurns+" skipped turn remains.":"You can roll again on your next turn.",C("#654174"));return;}StartCoroutine(RollTurn());}
     IEnumerator RollTurn()
     {
-        rolling=true;rollButton.interactable=false;HideHover();diceResult.text="ROLLING...";
+        SaveCheckpoint();rolling=true;rollButton.interactable=false;HideHover();diceResult.text="ROLLING...";
         yield return world.ThrowDice(charity?2:1);charity=false;
         int die=world.DiceTotal;lastRoll=die;diceResult.text="ROLLED  "+die;
         int old=fastTrack?fastPosition:position;
+        pendingDecision=new PendingDecision{kind="move",amount=die};SaveCheckpoint(true);
         yield return world.MovePawn(old,die,fastTrack);
         if(fastTrack)fastPosition=(old+die)%24;else position=(old+die)%24;
-        CollectMovementPaydays(old,die);
-        Land(fastTrack?fastTiles[fastPosition]:ratTiles[position]);Refresh();rolling=false;UpdateTurnStatus();rollButton.interactable=modal==null;
+        pendingDecision=new PendingDecision();CollectMovementPaydays(old,die);
+        Land(fastTrack?fastTiles[fastPosition]:ratTiles[position]);Refresh();rolling=false;UpdateTurnStatus();rollButton.interactable=modal==null;SaveCheckpoint();
     }
     // Include the destination, but never the starting space. Movement owns the
     // payment so landing on Payday cannot collect it a second time.
