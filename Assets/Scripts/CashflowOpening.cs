@@ -19,9 +19,10 @@ public partial class CashflowGame
     void OpeningShell(bool dreamsPage)
     {
         ClearUI();SetOpeningBackdrop(true);uiRoot.Find("Background").GetComponent<Image>().color=Color.clear;
-        var logo=Label(uiRoot,"CASHFLOW",46);logo.fontStyle=FontStyle.Bold;logo.color=C("#ffe3a0");Place(logo.rectTransform,0,302,520,58);
+        var logo=Label(uiRoot,"CASHFLOW KINGDOM",34);logo.fontStyle=FontStyle.Bold;logo.color=C("#ffe3a0");Place(logo.rectTransform,30,302,550,58);
+        var crown=new GameObject("Kingdom Crown",typeof(RectTransform),typeof(RawImage));crown.transform.SetParent(uiRoot,false);crown.GetComponent<RawImage>().texture=Resources.Load<Texture2D>("Branding/kingdom-icon");crown.GetComponent<RawImage>().raycastTarget=false;Place(crown.GetComponent<RectTransform>(),-274,302,48,48);
         var outline=logo.gameObject.AddComponent<Outline>();outline.effectColor=C("#443050");outline.effectDistance=new Vector2(3,-3);
-        var tag=Label(uiRoot,"YOUR ROAD TO FINANCIAL FREEDOM",12);tag.color=C("#443050");Place(tag.rectTransform,0,261,520,22);
+        var tag=Label(uiRoot,"THE GAME OF FINANCIAL FREEDOM",12);tag.color=C("#443050");Place(tag.rectTransform,0,261,520,22);
         var title=Label(uiRoot,dreamsPage?"Choose your dream":"Choose your profession",32);title.fontStyle=FontStyle.Bold;Place(title.rectTransform,0,207,750,46);
         var shadow=title.gameObject.AddComponent<Shadow>();shadow.effectColor=C("#443050");shadow.effectDistance=new Vector2(1,-2);
         var previous=OpeningButton(uiRoot,"‹",()=>ChangeOpeningSelection(dreamsPage,-1));previous.name="Previous Selection";Place(previous.GetComponent<RectTransform>(),-589,-20,54,74);SetButtonText(previous,C("#443050"),40);

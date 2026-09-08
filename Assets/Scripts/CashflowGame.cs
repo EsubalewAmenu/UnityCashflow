@@ -120,7 +120,7 @@ public partial class CashflowGame : MonoBehaviour
     void BuildCanvas() { var root=new GameObject("Cashflow Unity",typeof(Canvas),typeof(CanvasScaler),typeof(GraphicRaycaster)); canvas=root.GetComponent<Canvas>(); canvas.renderMode=RenderMode.ScreenSpaceOverlay; var scaler=root.GetComponent<CanvasScaler>(); scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution=new Vector2(1280,720); scaler.matchWidthOrHeight=.5f; uiRoot=new GameObject("Safe Area",typeof(RectTransform),typeof(SafeBoardLayout)).GetComponent<RectTransform>(); uiRoot.SetParent(root.transform,false); var bg=new GameObject("Background",typeof(Image)); bg.transform.SetParent(uiRoot,false); bg.GetComponent<Image>().color=C("#0b1220"); Stretch(bg.GetComponent<RectTransform>()); }
     void ClearUI() { foreach(Transform child in uiRoot) if(child.name!="Background"){child.gameObject.SetActive(false);Destroy(child.gameObject);} }
     void SetButtonText(Button button, Color color, int size) { var text=button.GetComponentInChildren<Text>(); if(text!=null){text.color=color;text.fontSize=size;text.fontStyle=FontStyle.Bold;} }
-    void StartGame(){ if(profession==null)LoadProfessionSelection(); selectedDream=Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream",0),0,dreams.Length-1); dream=dreams[selectedDream]; cash=profession.savings; portfolio.Clear(); passive=0;children=0;position=0;fastPosition=0;fastTrack=false;charity=false;skipTurns=0;bankLoan=0;gameWon=false;fastTrackIntro=false;ResetPersonalDebts();ResetHistory();ResetDealDecks();pendingDecision=new PendingDecision();BuildGame();saveActive=true;lastSavedPayload=null;SaveCheckpoint(); }
+    void StartGame(){ if(profession==null)LoadProfessionSelection(); selectedDream=Mathf.Clamp(PlayerPrefs.GetInt("CashflowDream",0),0,dreams.Length-1); dream=dreams[selectedDream]; cash=profession.savings; portfolio.Clear(); passive=0;children=0;position=0;fastPosition=0;fastTrack=false;charity=false;skipTurns=0;bankLoan=0;gameWon=false;gameOver=false;fastTrackIntro=false;ResetPersonalDebts();ResetHistory();ResetDealDecks();pendingDecision=new PendingDecision();BuildGame();saveActive=true;lastSavedPayload=null;SaveCheckpoint(); }
     void BuildGame()
     {
         if(world!=null){world.gameObject.SetActive(false);Destroy(world.gameObject);}
@@ -206,7 +206,7 @@ public partial class CashflowGame : MonoBehaviour
         var panel=Panel(modal.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),size,C("#302540"));panel.GetComponent<Image>().sprite=RoundedSprite();panel.GetComponent<Image>().type=Image.Type.Sliced;
         if(world!=null)world.InputBlocked=true;if(rollButton!=null)rollButton.interactable=false;return panel;
     }
-    void CloseModal(){pendingDecision=new PendingDecision();if(modal!=null){modal.SetActive(false);Destroy(modal);modal=null;}if(world!=null)world.InputBlocked=false;if(rollButton!=null)rollButton.interactable=!rolling;}
+    void CloseModal(){pendingDecision=new PendingDecision();if(modal!=null){modal.SetActive(false);Destroy(modal);modal=null;}if(world!=null)world.InputBlocked=false;if(rollButton!=null)rollButton.interactable=!rolling&&!gameOver;}
     GameObject Panel(Transform p,Vector2 aMin,Vector2 aMax,Vector2 size,Color c){var go=new GameObject("Panel",typeof(RectTransform),typeof(Image));go.transform.SetParent(p,false);var r=go.GetComponent<RectTransform>();r.anchorMin=aMin;r.anchorMax=aMax;r.sizeDelta=size;go.GetComponent<Image>().color=c;return go;}
     void Place(RectTransform r,float x,float y,float w,float h){r.anchorMin=r.anchorMax=new Vector2(.5f,.5f);r.anchoredPosition=new Vector2(x,y);r.sizeDelta=new Vector2(w,h);}
     void DrawBoard()
@@ -281,7 +281,7 @@ public partial class CashflowGame : MonoBehaviour
         if(title.Contains("+")) return "buy a Fast Track venture for major cashflow.";
         return "resolve this Fast Track event.";
     }
-    void ShowTileDetails(string title, bool outer) { if(rolling||world.Dragged)return; ShowEventPanel((outer?"FAST TRACK":"RAT RACE")+" • "+title,TileDescription(title)+"\n\nClick Roll to land here and resolve the event.",outer?C("#075e50"):TileColor(title)); }
+    void ShowTileDetails(string title, bool outer) { if(gameOver||rolling||world.Dragged)return; ShowEventPanel((outer?"FAST TRACK":"RAT RACE")+" • "+title,TileDescription(title)+"\n\nClick Roll to land here and resolve the event.",outer?C("#075e50"):TileColor(title)); }
     void ShowEventPanel(string title, string details, Color color)
     {
         var shade=CardShell("BOARD EVENT",title,color,new Vector2(700,440));
@@ -305,7 +305,7 @@ public partial class CashflowGame : MonoBehaviour
     }
     Color TileColor(string s){if(s.Contains("PAYDAY")||s.Contains("CASHFLOW"))return C("#80b66b");if(s.Contains("OPPORTUNITY")||s.Contains("+"))return C("#d89458");if(s.Contains("DOODAD")||s.Contains("AUDIT")||s.Contains("LAWSUIT")||s.Contains("DIVORCE"))return C("#c9756c");if(s.Contains("DREAM"))return C("#9c80b2");if(s.Contains("MARKET"))return C("#68a6b2");return C("#839ac0");}
     void MoveToken(){if(world!=null)world.PlacePawn(fastTrack?fastPosition:position,fastTrack);}
-    void Roll(){if(gameWon||rolling||modal!=null)return;if(fastTrackIntro){fastTrackIntro=false;ShowFastTrackIntro();return;}if(skipTurns>0){skipTurns--;Log("Downsized: turn skipped ("+skipTurns+" left).");Refresh();ShowEventPanel("TURN SKIPPED",skipTurns>0?skipTurns+" skipped turn remains.":"You can roll again on your next turn.",C("#654174"));return;}StartCoroutine(RollTurn());}
+    void Roll(){if(gameWon||gameOver||rolling||modal!=null)return;if(fastTrackIntro){fastTrackIntro=false;ShowFastTrackIntro();return;}if(skipTurns>0){skipTurns--;Log("Downsized: turn skipped ("+skipTurns+" left).");Refresh();ShowEventPanel("TURN SKIPPED",skipTurns>0?skipTurns+" skipped turn remains.":"You can roll again on your next turn.",C("#654174"));return;}StartCoroutine(RollTurn());}
     IEnumerator RollTurn()
     {
         SaveCheckpoint();rolling=true;rollButton.interactable=false;HideHover();diceResult.text="ROLLING...";
@@ -316,7 +316,7 @@ public partial class CashflowGame : MonoBehaviour
         yield return world.MovePawn(old,die,fastTrack);
         if(fastTrack)fastPosition=(old+die)%24;else position=(old+die)%24;
         pendingDecision=new PendingDecision();CollectMovementPaydays(old,die);
-        Land(fastTrack?fastTiles[fastPosition]:ratTiles[position]);Refresh();rolling=false;UpdateTurnStatus();rollButton.interactable=modal==null;SaveCheckpoint();
+        if(!CheckGameOver())Land(fastTrack?fastTiles[fastPosition]:ratTiles[position]);Refresh();rolling=false;UpdateTurnStatus();rollButton.interactable=modal==null&&!gameOver;SaveCheckpoint();
     }
     // Include the destination, but never the starting space. Movement owns the
     // payment so landing on Payday cannot collect it a second time.
@@ -342,7 +342,7 @@ public partial class CashflowGame : MonoBehaviour
     void CheckEscape(){if(!fastTrack&&passive>Expenses()){fastTrack=true;fastPosition=0;fastTrackIntro=true;DrawBoard();MoveToken();Log("You escaped the Rat Race! Welcome to the Fast Track.");}}
     void Refresh()
     {
-        UpdateTurnStatus();if(header==null)return;
+        CheckGameOver();UpdateTurnStatus();if(header==null)return;
         if(bottomCash!=null)bottomCash.text=Money(cash);
         if(bottomNetCashflow!=null){int net=Income()-Expenses();bottomNetCashflow.text=(net>0?"+":"")+Money(net);bottomNetCashflow.color=net<0?C("#ffaaa8"):net>0?C("#b8ec8a"):C("#eadfff");}
         if(freedomTitle!=null)freedomTitle.text=fastTrack?"DREAM SAVINGS":"PASSIVE / EXPENSES";

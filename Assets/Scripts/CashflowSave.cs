@@ -16,7 +16,7 @@ public partial class CashflowGame
     [Serializable] class SavedGame
     {
         public int version=1,selectedDream,cash,children,position,fastPosition,skipTurns,bankLoan,lastRoll;
-        public bool fastTrack,charity,gameWon,fastTrackIntro,reducedMotion;
+        public bool fastTrack,charity,gameWon,gameOver,fastTrackIntro,reducedMotion;
         public Profession profession;
         public List<OwnedInvestment> portfolio;
         public List<PersonalDebt> debts;
@@ -34,17 +34,21 @@ public partial class CashflowGame
     // Tests override this path on an isolated controller; production always uses persistentDataPath.
     string savePathOverride;
     string SavePath=>savePathOverride??Path.Combine(Application.persistentDataPath,"cashflow-save-v1.json");
+    // Desktop Unity uses the product name in its data folder; keep pre-branding saves discoverable.
+    string LegacySavePath=>savePathOverride==null?Path.Combine(Path.GetDirectoryName(Application.persistentDataPath),"Cashflow Unity","cashflow-save-v1.json"):SavePath;
+    bool HasSavedGame()=>File.Exists(SavePath)||File.Exists(SavePath+".bak")||File.Exists(LegacySavePath)||File.Exists(LegacySavePath+".bak");
     static bool resumeRequested;
     static string Digest(string payload){using(var hash=SHA256.Create())return Convert.ToBase64String(hash.ComputeHash(Encoding.UTF8.GetBytes(payload)));}
     SavedGame CaptureGame()=>new SavedGame {
         profession=profession,selectedDream=selectedDream,cash=cash,children=children,position=position,fastPosition=fastPosition,
-        skipTurns=skipTurns,bankLoan=bankLoan,lastRoll=lastRoll,fastTrack=fastTrack,charity=charity,gameWon=gameWon,fastTrackIntro=fastTrackIntro,
+        skipTurns=skipTurns,bankLoan=bankLoan,lastRoll=lastRoll,fastTrack=fastTrack,charity=charity,gameWon=gameWon,gameOver=gameOver,fastTrackIntro=fastTrackIntro,
         reducedMotion=world!=null&&world.ReducedMotion,portfolio=portfolio,debts=personalDebts,smallPile=smallDrawPile,bigPile=bigDrawPile,
         lastSmall=lastSmallDeal,lastBig=lastBigDeal,history=history,historyCash=historyCash,historyFlow=historyFlow,historyDebt=historyDebt,pending=pendingDecision
     };
     bool SaveCheckpoint(bool moving=false)
     {
         if(!saveActive||restoring||(!moving&&rolling))return true;
+        if(!moving)CheckGameOver();
         try{
             string payload=JsonUtility.ToJson(CaptureGame());if(payload==lastSavedPayload)return true;
             string text=JsonUtility.ToJson(new SaveEnvelope{payload=payload,checksum=Digest(payload)});
@@ -63,7 +67,9 @@ public partial class CashflowGame
     bool ReadSave(out SavedGame saved,out bool recovered)
     {
         recovered=false;saved=null;
-        foreach(string path in new[]{SavePath,SavePath+".bak"}){
+        var paths=new List<string>{SavePath,SavePath+".bak"};
+        if(!File.Exists(SavePath)&&!File.Exists(SavePath+".bak")&&LegacySavePath!=SavePath){paths.Add(LegacySavePath);paths.Add(LegacySavePath+".bak");}
+        foreach(string path in paths){
             try{
                 if(!File.Exists(path))continue;
                 var envelope=JsonUtility.FromJson<SaveEnvelope>(File.ReadAllText(path));
@@ -101,7 +107,7 @@ public partial class CashflowGame
         try{
             profession=s.profession;int professionIndex=Array.FindIndex(professions,p=>p.name==profession.name);if(professionIndex>=0)professions[professionIndex]=profession;
             selectedDream=s.selectedDream;dream=dreams[selectedDream];cash=s.cash;children=s.children;position=s.position;fastPosition=s.fastPosition;
-            skipTurns=s.skipTurns;bankLoan=s.bankLoan;lastRoll=s.lastRoll;fastTrack=s.fastTrack;charity=s.charity;gameWon=s.gameWon;fastTrackIntro=s.fastTrackIntro;
+            skipTurns=s.skipTurns;bankLoan=s.bankLoan;lastRoll=s.lastRoll;fastTrack=s.fastTrack;charity=s.charity;gameWon=s.gameWon;gameOver=s.gameOver;fastTrackIntro=s.fastTrackIntro;
             portfolio.Clear();portfolio.AddRange(s.portfolio);personalDebts.Clear();personalDebts.AddRange(s.debts);passive=0;foreach(var a in portfolio)passive+=a.monthlyIncome;
             smallDrawPile.Clear();smallDrawPile.AddRange(s.smallPile);bigDrawPile.Clear();bigDrawPile.AddRange(s.bigPile);lastSmallDeal=s.lastSmall;lastBigDeal=s.lastBig;
             history.Clear();history.AddRange(s.history);historyCash=s.historyCash;historyFlow=s.historyFlow;historyDebt=s.historyDebt;
@@ -117,6 +123,7 @@ public partial class CashflowGame
     void RestoreDecision(PendingDecision p)
     {
         if(gameWon){Win();return;}
+        if(gameOver){ShowGameOver();return;}
         switch(p.kind){
             case "choice":ShowDealChoice();break;
             case "deal":OfferDeal(p.deal,p.big);break;
@@ -134,7 +141,7 @@ public partial class CashflowGame
     {
         int old=fastTrack?fastPosition:position;
         if(fastTrack)fastPosition=(old+steps)%24;else position=(old+steps)%24;
-        pendingDecision=new PendingDecision();MoveToken();CollectMovementPaydays(old,steps);Land(fastTrack?fastTiles[fastPosition]:ratTiles[position]);
+        pendingDecision=new PendingDecision();MoveToken();CollectMovementPaydays(old,steps);if(!CheckGameOver())Land(fastTrack?fastTiles[fastPosition]:ratTiles[position]);
     }
     void LateUpdate(){if(Time.unscaledTime<nextSaveCheck)return;nextSaveCheck=Time.unscaledTime+.5f;SaveCheckpoint();}
     void OnApplicationPause(bool paused){if(paused)SaveCheckpoint();}
@@ -142,7 +149,7 @@ public partial class CashflowGame
     void OnApplicationQuit(){SaveCheckpoint();}
     void AddResumeButton()
     {
-        if(!File.Exists(SavePath)&&!File.Exists(SavePath+".bak"))return;
+        if(!HasSavedGame())return;
         var button=OpeningButton(uiRoot,"RESUME GAME",()=>{resumeRequested=true;SceneManager.LoadScene("GameBoard");});button.name="Resume Game";
         Place(button.GetComponent<RectTransform>(),-450,302,270,46);SetButtonText(button,C("#21756a"),20);
     }
@@ -156,7 +163,7 @@ public partial class CashflowGame
     }
     void ConfirmNewGame(Action start)
     {
-        if(File.Exists(SavePath)||File.Exists(SavePath+".bak"))ShowSaveMessage("Start a new game?","Starting over replaces your saved game. Choose Resume Game to continue your progress.",start);
+        if(HasSavedGame())ShowSaveMessage("Start a new game?","Starting over replaces your saved game. Choose Resume Game to continue your progress.",start);
         else start();
     }
 }

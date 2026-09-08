@@ -30,7 +30,7 @@ public partial class CashflowGame
     void UpdateTurnStatus()
     {
         if(diceResult==null||rolling)return;
-        diceResult.text=gameWon?"DREAM ACHIEVED":skipTurns>0?"SKIP TURNS: "+skipTurns:
+        diceResult.text=gameOver?"GAME OVER":gameWon?"DREAM ACHIEVED":skipTurns>0?"SKIP TURNS: "+skipTurns:
             charity?"CHARITY ACTIVE\nNEXT: 2 DICE":(lastRoll>0?"ROLLED "+lastRoll+"\n":"")+"NEXT: 1 DIE";
     }
     void AddHistoryButton(GameObject card)
