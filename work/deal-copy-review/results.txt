@@ -1,4 +1,4 @@
-PASS: readable card bounds at 1080x2160
 PASS: readable card bounds at 2160x1080
 PASS: readable card bounds at 1440x2560
 PASS: readable card bounds at 2560x1440
+PASS: readable card bounds at 1440x2960

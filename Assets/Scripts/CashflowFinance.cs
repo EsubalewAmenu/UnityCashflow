@@ -23,20 +23,22 @@ public partial class CashflowGame
     void ShowLoanOffer(Deal deal,bool big)
     {
         int principal=LoanNeeded(deal),payment=principal/10;bool resolved=false;
-        var card=CardShell("BANK LOAN • REVIEW BEFORE BUYING",deal.title,C("#654174"),new Vector2(760,520));
-        FinanceRow(card.transform,"Borrow",Money(principal),100);
-        FinanceRow(card.transform,"Added monthly interest",Money(payment)+" / mo",52);
-        FinanceRow(card.transform,"Deal income after added interest",Money(deal.flow-payment)+" / mo",4);
-        FinanceRow(card.transform,"Cash after purchase",Money(cash+principal-deal.down),-44);
-        var terms=Label(card.transform,"Game rule: borrow in $1,000 steps at $100/month per step.\nInterest does not reduce the loan. Repay principal in Finances.",16);terms.color=C("#6a6071");Place(terms.rectTransform,0,-113,680,58);
+        var card=CardShell("BANK LOAN • REVIEW BEFORE BUYING",deal.title,C("#654174"),new Vector2(900,590));
+        FinanceRow(card.transform,"Deal upfront payment",Money(deal.down),140);
+        FinanceRow(card.transform,"Deal monthly income",Money(deal.flow)+" / mo",98);
+        FinanceRow(card.transform,"Borrow",Money(principal),56);
+        FinanceRow(card.transform,"Added monthly interest",Money(payment)+" / mo",14);
+        FinanceRow(card.transform,"Current cash",Money(cash),-28);
+        FinanceRow(card.transform,"Current monthly cashflow",Money(Income()-Expenses())+" / mo",-70);
+        var terms=Label(card.transform,"Deal income is before this new loan's interest.\nGame rule: borrow in $1,000 steps at $100/month per step.\nInterest does not reduce the loan. Repay principal in Finances.",16);terms.color=C("#6a6071");Place(terms.rectTransform,0,-153,810,78);
         var accept=Button(card.transform,"BORROW & BUY",C("#654174"),()=>
         {
             if(resolved)return;resolved=true;
             // Recompute against the current balance, so accepting cannot overdraw cash.
             int loan=LoanNeeded(deal);PurchaseInvestment(deal,loan);
             CloseModal();CheckEscape();Refresh();Log("Borrowed "+Money(loan)+" and bought "+deal.title+". Loan interest: "+Money(LoanPayment())+"/mo.");PurchaseCelebration(deal);
-        });accept.name="Confirm Loan";Place(accept.GetComponent<RectTransform>(),150,-202,310,54);SetButtonText(accept,Color.white,18);
-        var pass=Button(card.transform,"PASS ON DEAL",C("#e8dcc5"),()=>{if(resolved)return;resolved=true;CloseModal();Log("Passed on "+deal.title+". No loan taken.");});pass.name="Pass Loan";Place(pass.GetComponent<RectTransform>(),-190,-202,270,54);SetButtonText(pass,C("#51445b"),18);
+        });accept.name="Confirm Loan";Place(accept.GetComponent<RectTransform>(),190,-245,350,54);SetButtonText(accept,Color.white,18);
+        var pass=Button(card.transform,"PASS ON DEAL",C("#e8dcc5"),()=>{if(resolved)return;resolved=true;CloseModal();Log("Passed on "+deal.title+". No loan taken.");});pass.name="Pass Loan";Place(pass.GetComponent<RectTransform>(),-230,-245,270,54);SetButtonText(pass,C("#51445b"),18);
     }
     void ShowStatement()
     {

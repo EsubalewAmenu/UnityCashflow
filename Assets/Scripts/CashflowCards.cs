@@ -59,10 +59,10 @@ public partial class CashflowGame
         bool affordable=cash>=deal.down, resolved=false;
         int loan=affordable?0:LoanNeeded(deal),interest=loan/10;
         var preview=Panel(card.transform,Vector2.one*.5f,Vector2.one*.5f,new Vector2(810,105),C("#e8eee3"));Place(preview.GetComponent<RectTransform>(),0,-48,810,105);
-        var impact=Label(preview.transform,"Cash: "+Money(cash)+" → "+Money(cash+loan-deal.down)+
-            "\nMonthly cashflow: "+Money(Income()-Expenses())+" → "+Money(Income()-Expenses()+deal.flow-interest),21,TextAnchor.MiddleLeft);
-        impact.name="Deal Impact";impact.color=C("#302540");Place(impact.rectTransform,0,9,770,62);
-        var funding=Label(preview.transform,affordable?"Paid from your cash. No additional bank loan needed.":"Includes a "+Money(loan)+" bank loan costing "+Money(interest)+" per month. Review before confirming.",16,TextAnchor.MiddleLeft);
+        var current=Label(preview.transform,"Current cash: "+Money(cash)+
+            "\nCurrent monthly cashflow: "+Money(Income()-Expenses()),21,TextAnchor.MiddleLeft);
+        current.name="Current Deal Finances";current.color=C("#302540");Place(current.rectTransform,0,9,770,62);
+        var funding=Label(preview.transform,affordable?"Can be paid from your cash. No additional bank loan needed.":"Buying requires a "+Money(loan)+" bank loan at "+Money(interest)+" per month. Review before confirming.",16,TextAnchor.MiddleLeft);
         funding.name="Deal Funding";funding.color=C(affordable?"#21756a":"#a84036");Place(funding.rectTransform,0,-32,770,28);
         var terms=Label(card.transform,"Upfront payment: cash needed to enter this deal.\nMonthly cashflow: income added at each Payday, before any new bank-loan interest.\nPassing costs nothing. Buying adds income; it does not pay you immediately.",17,TextAnchor.MiddleLeft);
         terms.name="Deal Terms";terms.color=C("#6a6071");Place(terms.rectTransform,0,-156,810,90);
