@@ -14,7 +14,7 @@ public partial class CashflowGame
     {
         if(tile=="CASHFLOW DAY")
         {
-            ShowEventPanel("CASHFLOW DAY","Collected net investment cashflow: "+Money(Income()-Expenses())+"\n\nInvestment income: "+Money(passive)+"\nExpenses: "+Money(Expenses()),C("#21756a"));return;
+            return; // Movement owns both the payment and its non-blocking receipt.
         }
         if(tile=="DREAM"){ShowDreamPurchase();return;}
         if(tile.Contains("+"))
@@ -24,7 +24,7 @@ public partial class CashflowGame
         }
         int loss=tile=="TAX AUDIT"?cash/10:tile=="LAWSUIT"?Mathf.Min(cash,25000):tile=="DIVORCE"?cash/2:cash/5;
         loss=Mathf.Max(0,loss);cash-=loss;Log(tile+": paid "+Money(loss)+".");
-        ShowEventPanel(tile,"Cash cost: "+Money(loss)+"\n\n"+(tile=="TAX AUDIT"?"An audit costs 10% of available cash.":tile=="LAWSUIT"?"A legal settlement costs up to $25,000 from available cash.":tile=="DIVORCE"?"A settlement divides your available cash in half.":"A market correction costs 20% of available cash.")+"\nYour investments and debts remain.",C("#a84036"));
+        ShowEventPanel(tile,"One-time payment made: "+Money(loss)+"\n\n"+(tile=="TAX AUDIT"?"An audit costs 10% of available cash.":tile=="LAWSUIT"?"A legal settlement costs up to $25,000 from available cash.":tile=="DIVORCE"?"A settlement divides your available cash in half.":"A market correction costs 20% of available cash.")+"\nInvestments, debts and monthly cashflow are unchanged.",C("#a84036"));
     }
     bool PurchaseDream()
     {

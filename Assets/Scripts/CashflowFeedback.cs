@@ -4,6 +4,16 @@ using UnityEngine.UI;
 
 public partial class CashflowGame
 {
+    BoardEventReceipt eventReceipt;
+    void CreateEventReceipt()
+    {
+        var panel=Panel(uiRoot,Vector2.one*.5f,Vector2.one*.5f,new Vector2(480,50),C("#21756a"));panel.name="Board Event Receipt";
+        Place(panel.GetComponent<RectTransform>(),180,325,480,50);panel.GetComponent<Image>().sprite=RoundedSprite();panel.GetComponent<Image>().type=Image.Type.Sliced;panel.GetComponent<Image>().raycastTarget=false;
+        eventReceipt=panel.AddComponent<BoardEventReceipt>();eventReceipt.Background=panel.GetComponent<Image>();
+        eventReceipt.Title=Label(panel.transform,"",14);eventReceipt.Title.fontStyle=FontStyle.Bold;Place(eventReceipt.Title.rectTransform,0,10,460,23);
+        eventReceipt.Detail=Label(panel.transform,"",11);Place(eventReceipt.Detail.rectTransform,0,-12,460,20);
+    }
+    void Receipt(string title,string detail,Color color){if(eventReceipt!=null)eventReceipt.Show(title,detail,color);}
     class HistoryEntry { public string message,changes; }
     readonly List<HistoryEntry> history=new List<HistoryEntry>();
     int historyCash,historyFlow,historyDebt,lastRoll;
@@ -56,22 +66,27 @@ public partial class CashflowGame
     }
     void ShowUnexpectedExpense()
     {
+        string[] titles={"CAR REPAIR","APPLIANCE REPLACEMENT","HOME REPAIR","FAMILY TRIP"};
         string[] reasons={"Your car needs an urgent repair.","A broken appliance needs replacing.","An unexpected home repair bill arrives.","A family trip costs more than planned."};
-        ShowRequiredExpense("UNEXPECTED EXPENSE",reasons[Random.Range(0,reasons.Length)],Random.Range(100,1001),0);
+        int index=Random.Range(0,reasons.Length);
+        ShowRequiredExpense(titles[index],reasons[index],Random.Range(100,1001),0);
     }
     void ShowRequiredExpense(string title,string reason,int cost,int turns)
     {
         int loan=Mathf.CeilToInt(Mathf.Max(0,cost-cash)/1000f)*1000;
-        var card=CardShell("EXPENSE • REVIEW",title,C("#a84036"),new Vector2(900,590));
+        var card=CardShell("ONE-TIME BILL • REVIEW",title,C("#a84036"),new Vector2(900,590));
         var story=Label(card.transform,reason,22);story.color=C("#51445b");Place(story.rectTransform,0,145,810,70);
-        FinanceRow(card.transform,"Expense due",Money(cost),80);FinanceRow(card.transform,"Available cash",Money(cash),35);
+        FinanceRow(card.transform,"One-time payment",Money(cost),80);FinanceRow(card.transform,"Available cash",Money(cash),35);
         FinanceRow(card.transform,"Required bank borrowing",Money(loan),-10);FinanceRow(card.transform,"Cash after payment",Money(cash+loan-cost),-55);
         FinanceRow(card.transform,"Added monthly interest",Money(loan/10),-100);
-        var note=Label(card.transform,loan>0?"This bill is mandatory. Borrowing covers the cash shortfall.\nGame rule: $100/month interest for each $1,000 borrowed.":"Pay this bill once from your available cash.\nNo new borrowing is needed.",19);note.color=C("#51445b");Place(note.rectTransform,0,-175,810,70);
+        string noteText=loan>0?"Pay this bill once. Borrowing covers the shortfall.\nLoan interest repeats monthly: $100 per $1,000 borrowed.":"Pay this bill once. Your monthly expenses stay the same.";
+        if(turns>0)noteText+="\nYou will also skip "+turns+" turns.";
+        var note=Label(card.transform,noteText,19);note.color=C("#51445b");Place(note.rectTransform,0,-175,810,80);
         bool resolved=false;var pay=Button(card.transform,loan>0?"BORROW & PAY":"PAY EXPENSE",C("#a84036"),()=>{
             if(resolved)return;resolved=true;
             int needed=Mathf.CeilToInt(Mathf.Max(0,cost-cash)/1000f)*1000;bankLoan+=needed;cash+=needed-cost;skipTurns=turns;
             CloseModal();Log(title+": paid "+Money(cost)+(needed>0?"; borrowed "+Money(needed):"")+(turns>0?"; skip "+turns+" turns.":"."));Refresh();world.Audio.Expense();
+            Receipt(title+" • PAID "+Money(cost),needed>0?"Borrowed "+Money(needed)+" • Monthly interest +"+Money(needed/10):"One-time payment • Monthly cashflow unchanged",C("#873d3a"));
         });pay.name="Pay Required Expense";Place(pay.GetComponent<RectTransform>(),0,-245,400,54);SetButtonText(pay,Color.white,18);
     }
 }

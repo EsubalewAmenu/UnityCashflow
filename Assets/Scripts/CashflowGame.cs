@@ -180,6 +180,7 @@ public partial class CashflowGame : MonoBehaviour
         Place(settings.GetComponent<RectTransform>(),160,0,100,52);
         settings.GetComponent<Image>().sprite=RoundedSprite();
         SetButtonText(settings,Color.white,12);
+        CreateEventReceipt();
 
     }
     void ShowBoardSettings()
@@ -201,6 +202,7 @@ public partial class CashflowGame : MonoBehaviour
     GameObject Modal(Vector2 size)
     {
         CloseModal(); modal=Panel(uiRoot,Vector2.zero,Vector2.one,Vector2.zero,new Color(.06f,.04f,.12f,.7f));modal.name="Modal Blocker";
+        if(eventReceipt!=null)eventReceipt.transform.SetAsLastSibling();
         var panel=Panel(modal.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),size,C("#302540"));panel.GetComponent<Image>().sprite=RoundedSprite();panel.GetComponent<Image>().type=Image.Type.Sliced;
         if(world!=null)world.InputBlocked=true;if(rollButton!=null)rollButton.interactable=false;return panel;
     }
@@ -323,18 +325,18 @@ public partial class CashflowGame : MonoBehaviour
     }
     void Land(string tile)
     {
-        if(tile=="PAYDAY"){ ShowEventPanel("PAYDAY","Your monthly cashflow was added to cash.\n\nCollected: "+Money(Income()-Expenses()),C("#a16207")); return; }
+        if(tile=="PAYDAY")return; // Movement already paid and displayed its receipt.
         if(tile=="OPPORTUNITY"){ ShowDealChoice(); return; }
         if(tile=="DOODAD"){ ShowUnexpectedExpense(); return; }
         if(tile=="CHARITY"){ShowCharityChoice();return;}
-        if(tile=="BABY"){ if(children>=3){ShowEventPanel("FAMILY UPDATE","Your family is already at the three-child game limit. Monthly expenses stay the same.",C("#be185d"));return;}children++; Log("A new baby joins the family. Expenses increased."); ShowEventPanel("BABY","Your family grew.\n\nMonthly expenses increased by "+Money(profession.childPay)+".",C("#be185d")); return; }
+        if(tile=="BABY"){ if(children>=3){ShowEventPanel("FAMILY UPDATE","Your family is already at the three-child game limit. Monthly expenses stay the same.",C("#be185d"));return;}children++; Log("New baby: monthly expenses +"+Money(profession.childPay)+"; monthly cashflow -"+Money(profession.childPay)+"."); ShowEventPanel("NEW BABY • MONTHLY CHANGE","Monthly expenses +"+Money(profession.childPay)+"\nNet monthly cashflow -"+Money(profession.childPay)+"\n\nThis repeats each month. No cash is paid now.",C("#be185d")); return; }
         if(tile=="DOWNSIZED"){ ShowRequiredExpense("DOWNSIZED","Your job is interrupted. Pay one month of expenses, then skip two turns.",Expenses(),2); return; }
         if(tile=="MARKET"){ ShowMarketOffer(); return; }
         if(fastTrack)ResolveFastTrack(tile);
     }
     int Expenses(){return profession.taxes+PersonalDebtPayments()+profession.other+children*profession.childPay+LoanPayment();}
     int Income(){return (fastTrack?0:profession.salary)+passive;}
-    void Payday(){int amount=Income()-Expenses();cash+=amount;Log("PAYDAY: collected "+Money(amount));if(world!=null)world.Audio.Payday();}
+    void Payday(){int amount=Income()-Expenses();cash+=amount;string title=fastTrack?"CASHFLOW DAY":"PAYDAY";Log(title+": cash "+SignedMoney(amount)+".");Receipt(title+" • "+SignedMoney(amount),"Income "+Money(Income())+" − expenses "+Money(Expenses())+" • Cash now "+Money(cash),amount<0?C("#873d3a"):C("#21756a"));if(world!=null)world.Audio.Payday();}
     void CheckEscape(){if(!fastTrack&&passive>Expenses()){fastTrack=true;fastPosition=0;fastTrackIntro=true;DrawBoard();MoveToken();Log("You escaped the Rat Race! Welcome to the Fast Track.");}}
     void Refresh()
     {
