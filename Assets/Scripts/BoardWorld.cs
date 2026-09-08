@@ -13,7 +13,8 @@ public sealed class BoardWorld : MonoBehaviour
     public bool Follow { get; private set; }
     public bool Busy { get; private set; }
     public bool Dragged => moved;
-    public bool Sound = true;
+    public BoardAudio Audio { get; private set; }
+    public bool Sound { get=>Audio!=null && Audio.SoundEnabled; set {if(Audio!=null)Audio.SoundEnabled=value;} }
     public bool ReducedMotion;
     public bool InputBlocked;
     readonly List<Material> materials = new List<Material>();
@@ -23,8 +24,6 @@ public sealed class BoardWorld : MonoBehaviour
     float yaw, pitch = 55, zoom = 1;
     Vector2 pointer;
     bool dragging, moved;
-    AudioSource audioSource;
-    AudioClip clack;
     Mesh boardBase;
 
     public static Vector3 TrackPoint(int index, bool fast)
@@ -35,6 +34,7 @@ public sealed class BoardWorld : MonoBehaviour
 
     public void Initialize(RectTransform face)
     {
+        Audio=gameObject.AddComponent<BoardAudio>();
         BoardTrackGenerator.Straight=328;
         // Clear the entire display, including the HUD area outside the 3D viewport.
         // A partial camera rect alone leaves old UI pixels behind after resizing.
@@ -63,9 +63,6 @@ public sealed class BoardWorld : MonoBehaviour
         Box("Stone foundation",new Vector3(0,-.4f,0),new Vector3(70,.4f,70),Mat("#b6b0c1"));
         BuildScenery(); BuildDecks(); BuildPawn();
         for(int i=0;i<2;i++) { var d=new GameObject("Die "+(i+1)).AddComponent<BoardDie>(); d.transform.SetParent(transform,false); d.Build(Mat("#fff9e9",0,.32f),Mat("#20283a",.1f,.2f)); d.transform.position=new Vector3((i==0?-.38f:.38f),.4f,-.3f); dice.Add(d); }
-        audioSource=gameObject.AddComponent<AudioSource>(); audioSource.spatialBlend=0;
-        clack=AudioClip.Create("Dice clack",2205,1,22050,false); var samples=new float[2205];
-        for(int i=0;i<samples.Length;i++)samples[i]=Mathf.Sin(i*1.17f)*Mathf.Exp(-i/180f)*.25f; clack.SetData(samples,0);
         SetOverview(true); UpdateCamera(true);
     }
 
@@ -186,6 +183,7 @@ public sealed class BoardWorld : MonoBehaviour
     public IEnumerator ThrowDice(int count)
     {
         Busy=true;DiceTotal=0;
+        Audio.Roll();
         for(int i=0;i<dice.Count;i++)
         {
             dice[i].gameObject.SetActive(i<count);
@@ -200,13 +198,11 @@ public sealed class BoardWorld : MonoBehaviour
             if(settled)break;
         }
         for(int i=0;i<count;i++){dice[i].Finish();DiceTotal+=dice[i].Value;}
-        if(Sound)audioSource.PlayOneShot(clack);
         yield return new WaitForSeconds(ReducedMotion?.1f:.4f);Busy=false;
     }
     void OnDestroy()
     {
         foreach(var m in materials)if(m!=null)Destroy(m);
-        if(clack!=null)Destroy(clack);
         if(boardBase!=null)Destroy(boardBase);
     }
 }

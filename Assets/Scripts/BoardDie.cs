@@ -7,11 +7,13 @@ public sealed class BoardDie : MonoBehaviour
     Rigidbody body;
     Mesh roundedMesh;
     PhysicMaterial physics;
+    BoardAudio audio;
     public int Value { get; private set; }
     static readonly Vector3[] normals={Vector3.up,Vector3.right,Vector3.forward,Vector3.back,Vector3.left,Vector3.down};
     public bool Settled => body.IsSleeping() || (body.velocity.sqrMagnitude<.002f && body.angularVelocity.sqrMagnitude<.02f);
     public void Build(Material ivory,Material ink)
     {
+        audio=GetComponentInParent<BoardWorld>().Audio;
         var cube=new GameObject("Rounded ivory die",typeof(MeshFilter),typeof(MeshRenderer),typeof(BoxCollider));cube.transform.SetParent(transform,false);cube.GetComponent<Renderer>().sharedMaterial=ivory;
         roundedMesh=RoundedCube();cube.GetComponent<MeshFilter>().sharedMesh=roundedMesh;
         var collider=cube.GetComponent<BoxCollider>();collider.size=Vector3.one*.42f;physics=new PhysicMaterial("Dice bounce"){bounciness=.3f,dynamicFriction=.6f,staticFriction=.65f};collider.material=physics;
@@ -56,6 +58,10 @@ public sealed class BoardDie : MonoBehaviour
         // Resolve an exceptionally cocked die to the same visible upper face.
         transform.rotation=Quaternion.FromToRotation(transform.TransformDirection(normals[face]),Vector3.up)*transform.rotation;
         transform.position=new Vector3(Mathf.Clamp(transform.position.x,-1.4f,1.4f),.36f,Mathf.Clamp(transform.position.z,-.7f,.5f));
+    }
+    void OnCollisionEnter(Collision collision)
+    {
+        if(body!=null && !body.isKinematic && audio!=null)audio.Impact(collision.relativeVelocity.magnitude);
     }
     void OnDestroy(){if(roundedMesh!=null)Destroy(roundedMesh);if(physics!=null)Destroy(physics);}
 }

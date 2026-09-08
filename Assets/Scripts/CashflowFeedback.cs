@@ -71,7 +71,7 @@ public partial class CashflowGame
         bool resolved=false;var pay=Button(card.transform,loan>0?"BORROW & PAY":"PAY EXPENSE",C("#a84036"),()=>{
             if(resolved)return;resolved=true;
             int needed=Mathf.CeilToInt(Mathf.Max(0,cost-cash)/1000f)*1000;bankLoan+=needed;cash+=needed-cost;skipTurns=turns;
-            CloseModal();Log(title+": paid "+Money(cost)+(needed>0?"; borrowed "+Money(needed):"")+(turns>0?"; skip "+turns+" turns.":"."));Refresh();
+            CloseModal();Log(title+": paid "+Money(cost)+(needed>0?"; borrowed "+Money(needed):"")+(turns>0?"; skip "+turns+" turns.":"."));Refresh();world.Audio.Expense();
         });pay.name="Pay Required Expense";Place(pay.GetComponent<RectTransform>(),0,-245,400,54);SetButtonText(pay,Color.white,18);
     }
 }

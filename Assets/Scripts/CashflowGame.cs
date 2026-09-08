@@ -57,7 +57,7 @@ public partial class CashflowGame : MonoBehaviour
 
     Profession profession; string dream; int selectedDream; int cash, passive, children, position, fastPosition; bool fastTrack, charity; int skipTurns; int bankLoan;
     BoardWorld world; Button rollButton; bool rolling; GameObject modal;
-    RectTransform uiRoot; Text bottomCash, freedomText, diceResult; Image freedomFill;
+    RectTransform uiRoot; Text bottomCash, bottomNetCashflow, freedomTitle, freedomText, diceResult; Image freedomFill;
     Canvas canvas; Text header, statement, log, cashReadout, flowReadout, modeReadout, hoverCopy; RectTransform board; GameObject hoverPanel; Sprite circleSprite, roundedSprite; Font uiFont; readonly Dictionary<string, Sprite> artSprites = new Dictionary<string, Sprite>(); readonly List<Button> tileButtons = new List<Button>(); readonly List<GameObject> boardDecorations = new List<GameObject>();
 
     void Awake() { Application.runInBackground=true; BuildCanvas(); }
@@ -151,13 +151,18 @@ public partial class CashflowGame : MonoBehaviour
         var bottom=Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1280,86),C("#2d2450")); Place(bottom.GetComponent<RectTransform>(),0,-317,1280,86);
         var portrait=Panel(bottom.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(60,60),C("#f6b34d")); Place(portrait.GetComponent<RectTransform>(),-560,0,60,60); portrait.GetComponent<Image>().sprite=CircleSprite();
         var portraitArt=new GameObject("Player Portrait Art",typeof(RectTransform),typeof(Image)); portraitArt.transform.SetParent(portrait.transform,false); var portraitImage=portraitArt.GetComponent<Image>(); portraitImage.sprite=ProfessionPortrait(System.Array.IndexOf(professions,profession)); portraitImage.preserveAspect=true; portraitImage.raycastTarget=false; Stretch(portraitArt.GetComponent<RectTransform>());
-        var cashLabel=Label(bottom.transform,"CASH BALANCE",11,TextAnchor.MiddleLeft); cashLabel.color=C("#eadfff"); Place(cashLabel.rectTransform,-395,16,220,20);
-        var cashValue=Label(bottom.transform,Money(cash),25,TextAnchor.MiddleLeft); bottomCash=cashValue; cashValue.color=C("#f8d45a"); cashValue.fontStyle=FontStyle.Bold; Place(cashValue.rectTransform,-395,-12,220,30);
-        var passiveLabel=Label(bottom.transform,"PASSIVE INCOME",12); passiveLabel.color=C("#eadfff"); passiveLabel.fontStyle=FontStyle.Bold; Place(passiveLabel.rectTransform,-90,23,280,20);
-        var progressBack=Panel(bottom.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(380,20),C("#16112a")); Place(progressBack.GetComponent<RectTransform>(),-90,-4,380,20);
+        var cashLabel=Label(bottom.transform,"CASH BALANCE",11,TextAnchor.MiddleLeft); cashLabel.color=C("#eadfff"); Place(cashLabel.rectTransform,-440,16,150,20);
+        var cashValue=Label(bottom.transform,Money(cash),25,TextAnchor.MiddleLeft); bottomCash=cashValue; cashValue.gameObject.name="HUD Cash Balance"; cashValue.color=C("#f8d45a"); cashValue.fontStyle=FontStyle.Bold; Place(cashValue.rectTransform,-440,-11,150,36);
+        cashValue.resizeTextForBestFit=true;cashValue.resizeTextMinSize=16;cashValue.resizeTextMaxSize=25;
+        var netLabel=Label(bottom.transform,"NET MONTHLY CASHFLOW",11,TextAnchor.MiddleLeft);netLabel.color=C("#eadfff");Place(netLabel.rectTransform,-260,16,190,20);
+        bottomNetCashflow=Label(bottom.transform,"",25,TextAnchor.MiddleLeft);bottomNetCashflow.gameObject.name="HUD Net Monthly Cashflow";bottomNetCashflow.fontStyle=FontStyle.Bold;Place(bottomNetCashflow.rectTransform,-260,-11,190,36);
+        bottomNetCashflow.resizeTextForBestFit=true;bottomNetCashflow.resizeTextMinSize=16;bottomNetCashflow.resizeTextMaxSize=25;
+        var passiveLabel=Label(bottom.transform,"PASSIVE / EXPENSES",12);freedomTitle=passiveLabel;passiveLabel.color=C("#eadfff"); passiveLabel.fontStyle=FontStyle.Bold; Place(passiveLabel.rectTransform,-30,23,230,20);
+        var progressBack=Panel(bottom.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(230,20),C("#16112a")); Place(progressBack.GetComponent<RectTransform>(),-30,-4,230,20);
         var progress=Panel(progressBack.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(145,13),C("#86c94f")); Place(progress.GetComponent<RectTransform>(),-112,0,145,13);
-        freedomFill=progress.GetComponent<Image>(); freedomFill.sprite=RoundedSprite(); freedomFill.type=Image.Type.Filled; freedomFill.fillMethod=Image.FillMethod.Horizontal; Place(progress.GetComponent<RectTransform>(),0,0,370,13);
-        var progressText=Label(bottom.transform,"Build your monthly freedom",11); freedomText=progressText; progressText.color=C("#ffffff"); Place(progressText.rectTransform,-90,-27,290,17);
+        freedomFill=progress.GetComponent<Image>(); freedomFill.sprite=RoundedSprite(); freedomFill.type=Image.Type.Filled; freedomFill.fillMethod=Image.FillMethod.Horizontal; Place(progress.GetComponent<RectTransform>(),0,0,220,13);
+        var progressText=Label(bottom.transform,"Build your monthly freedom",11); freedomText=progressText; progressText.color=C("#ffffff"); Place(progressText.rectTransform,-30,-27,230,17);
+        progressText.resizeTextForBestFit=true;progressText.resizeTextMinSize=9;progressText.resizeTextMaxSize=11;
         var roll=Button(bottom.transform,"ROLL DICE",C("#69b642"),Roll); rollButton=roll; roll.GetComponent<Image>().sprite=RoundedSprite(); Place(roll.GetComponent<RectTransform>(),485,0,235,60); SetButtonText(roll,Color.white,25); var outline=roll.gameObject.AddComponent<Outline>(); outline.effectColor=C("#f6f1ca"); outline.effectDistance=new Vector2(3,3);
         var diceArt=new GameObject("Dice Icon",typeof(RectTransform),typeof(Image)); diceArt.transform.SetParent(roll.transform,false);
         var diceImage=diceArt.GetComponent<Image>(); diceImage.sprite=RoundedSprite(); diceImage.type=Image.Type.Sliced; diceImage.color=Color.white; diceImage.raycastTarget=false;
@@ -179,18 +184,19 @@ public partial class CashflowGame : MonoBehaviour
     }
     void ShowBoardSettings()
     {
-        var panel=Modal(new Vector2(440,450));
-        var title=Label(panel.transform,"BOARD SETTINGS",22);Place(title.rectTransform,0,180,400,36);
-        var cameraTitle=Label(panel.transform,"CAMERA VIEW",13);Place(cameraTitle.rectTransform,0,133,340,24);
+        var panel=Modal(new Vector2(440,560));
+        var title=Label(panel.transform,"BOARD SETTINGS",22);Place(title.rectTransform,0,235,400,36);
+        var cameraTitle=Label(panel.transform,"CAMERA VIEW",13);Place(cameraTitle.rectTransform,0,190,340,24);
         var overview=Button(panel.transform,world.Follow?"OVERVIEW":"OVERVIEW  •",C("#544566"),()=>{});
         var follow=Button(panel.transform,world.Follow?"FOLLOW  •":"FOLLOW",C("#544566"),()=>{});
         overview.onClick.AddListener(()=>{world.SetOverview(true);overview.GetComponentInChildren<Text>().text="OVERVIEW  •";follow.GetComponentInChildren<Text>().text="FOLLOW";});
         follow.onClick.AddListener(()=>{world.SetOverview(false);overview.GetComponentInChildren<Text>().text="OVERVIEW";follow.GetComponentInChildren<Text>().text="FOLLOW  •";});
-        Place(overview.GetComponent<RectTransform>(),-88,94,164,44);Place(follow.GetComponent<RectTransform>(),88,94,164,44);
-        var sound=Button(panel.transform,world.Sound?"SOUND: ON":"SOUND: OFF",C("#544566"),()=>{});sound.onClick.AddListener(()=>{world.Sound=!world.Sound;sound.GetComponentInChildren<Text>().text=world.Sound?"SOUND: ON":"SOUND: OFF";});Place(sound.GetComponent<RectTransform>(),0,30,340,40);
-        var motion=Button(panel.transform,world.ReducedMotion?"REDUCED MOTION: ON":"REDUCED MOTION: OFF",C("#544566"),()=>{});motion.onClick.AddListener(()=>{world.ReducedMotion=!world.ReducedMotion;motion.GetComponentInChildren<Text>().text=world.ReducedMotion?"REDUCED MOTION: ON":"REDUCED MOTION: OFF";});Place(motion.GetComponent<RectTransform>(),0,-22,340,40);
-        var scenery=Button(panel.transform,"SHOW / HIDE CITY",C("#544566"),()=>world.ToggleScenery());Place(scenery.GetComponent<RectTransform>(),0,-74,340,40);
-        var close=Button(panel.transform,"DONE",C("#69a747"),()=>CloseModal());Place(close.GetComponent<RectTransform>(),0,-160,180,44);
+        Place(overview.GetComponent<RectTransform>(),-88,150,164,44);Place(follow.GetComponent<RectTransform>(),88,150,164,44);
+        var sound=Button(panel.transform,world.Sound?"SOUND: ON":"SOUND: OFF",C("#544566"),()=>{});sound.onClick.AddListener(()=>{world.Sound=!world.Sound;sound.GetComponentInChildren<Text>().text=world.Sound?"SOUND: ON":"SOUND: OFF";});Place(sound.GetComponent<RectTransform>(),0,90,340,40);
+        var motion=Button(panel.transform,world.ReducedMotion?"REDUCED MOTION: ON":"REDUCED MOTION: OFF",C("#544566"),()=>{});motion.onClick.AddListener(()=>{world.ReducedMotion=!world.ReducedMotion;motion.GetComponentInChildren<Text>().text=world.ReducedMotion?"REDUCED MOTION: ON":"REDUCED MOTION: OFF";});Place(motion.GetComponent<RectTransform>(),0,-52,340,40);
+        var scenery=Button(panel.transform,"SHOW / HIDE CITY",C("#544566"),()=>world.ToggleScenery());Place(scenery.GetComponent<RectTransform>(),0,-104,340,40);
+        AddAudioVolume(panel.transform);
+        var close=Button(panel.transform,"DONE",C("#69a747"),()=>{world.Audio.SavePreferences();CloseModal();});Place(close.GetComponent<RectTransform>(),0,-230,180,44);
     }
     GameObject Modal(Vector2 size)
     {
@@ -328,14 +334,16 @@ public partial class CashflowGame : MonoBehaviour
     }
     int Expenses(){return profession.taxes+PersonalDebtPayments()+profession.other+children*profession.childPay+LoanPayment();}
     int Income(){return (fastTrack?0:profession.salary)+passive;}
-    void Payday(){int amount=Income()-Expenses();cash+=amount;Log("PAYDAY: collected "+Money(amount));}
+    void Payday(){int amount=Income()-Expenses();cash+=amount;Log("PAYDAY: collected "+Money(amount));if(world!=null)world.Audio.Payday();}
     void CheckEscape(){if(!fastTrack&&passive>Expenses()){fastTrack=true;fastPosition=0;fastTrackIntro=true;DrawBoard();MoveToken();Log("You escaped the Rat Race! Welcome to the Fast Track.");}}
     void Refresh()
     {
         UpdateTurnStatus();if(header==null)return;
         if(bottomCash!=null)bottomCash.text=Money(cash);
+        if(bottomNetCashflow!=null){int net=Income()-Expenses();bottomNetCashflow.text=(net>0?"+":"")+Money(net);bottomNetCashflow.color=net<0?C("#ffaaa8"):net>0?C("#b8ec8a"):C("#eadfff");}
+        if(freedomTitle!=null)freedomTitle.text=fastTrack?"DREAM SAVINGS":"PASSIVE / EXPENSES";
         if(freedomFill!=null)freedomFill.fillAmount=fastTrack?Mathf.Clamp01(cash/(float)dreamGoals[selectedDream]):Mathf.Clamp01(passive/(float)Mathf.Max(1,Expenses()));
-        if(freedomText!=null)freedomText.text=fastTrack?dream+" • "+Money(cash)+" / "+Money(dreamGoals[selectedDream]):Money(passive)+" / "+Money(Expenses())+" per month";
+        if(freedomText!=null)freedomText.text=fastTrack?Money(cash)+" / "+Money(dreamGoals[selectedDream]):Money(passive)+" / "+Money(Expenses())+" per month";
         header.text=profession.name.ToUpper()+"  /  "+(fastTrack?"FAST TRACK":"RAT RACE");
         if(modeReadout!=null) modeReadout.text=fastTrack?"FAST TRACK":"RAT RACE";
         if(cashReadout!=null) cashReadout.text="◉  "+Money(cash);

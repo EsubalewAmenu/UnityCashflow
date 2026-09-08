@@ -15,6 +15,7 @@ public partial class CashflowGame
         var tag=Label(card.transform,category,13);tag.color=accent;tag.fontStyle=FontStyle.Bold;Place(tag.rectTransform,0,size.y/2-42,size.x-50,22);
         var heading=Label(card.transform,title,29);heading.color=C("#302540");heading.fontStyle=FontStyle.Bold;Place(heading.rectTransform,0,size.y/2-85,size.x-60,48);
         card.AddComponent<CardReveal>().Play(world.ReducedMotion,flip);
+        world.Audio.Card();
         return card;
     }
     void ShowDealChoice()
@@ -76,6 +77,7 @@ public partial class CashflowGame
     }
     void PurchaseCelebration(Deal deal)
     {
+        world.Audio.Purchase();
         var toast=Panel(uiRoot,Vector2.one*.5f,Vector2.one*.5f,new Vector2(520,88),C("#21756a"));
         toast.name="Property Acquired";Place(toast.GetComponent<RectTransform>(),0,230,520,88);
         toast.GetComponent<Image>().sprite=RoundedSprite();
