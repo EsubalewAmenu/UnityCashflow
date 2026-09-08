@@ -30,15 +30,14 @@ public partial class CashflowGame
         var button=Button(parent,"",accent,()=>
         {
             if(chosen)return;chosen=true;
-            var pool=big?bigDeals:smallDeals;
-            OfferDeal(pool[Random.Range(0,pool.Length)],big);
+            OfferDeal(DrawDeal(big),big);
         });
         button.gameObject.name=big?"Choose Big Deal":"Choose Small Deal";
         Place(button.GetComponent<RectTransform>(),x,-60,340,278);
         button.GetComponent<Image>().sprite=RoundedSprite();button.GetComponent<Image>().type=Image.Type.Sliced;
         DealArt(button.transform,big,new Vector2(0,45),new Vector2(175,115));
         var title=Label(button.transform,big?"BIG DEAL":"SMALL DEAL",24);title.fontStyle=FontStyle.Bold;Place(title.rectTransform,0,-38,310,35);
-        var cost=Label(button.transform,big?"$10,000–$35,000 down":"$3,000–$5,000 down",17);cost.color=C("#f5e4bc");Place(cost.rectTransform,0,-77,310,28);
+        var cost=Label(button.transform,DealPriceRange(big),17);cost.color=C("#f5e4bc");Place(cost.rectTransform,0,-77,310,28);
         var draw=Label(button.transform,"DRAW A CARD  →",15);Place(draw.rectTransform,0,-112,300,25);
         foreach(var graphic in button.GetComponentsInChildren<Graphic>())if(graphic!=button.targetGraphic)graphic.raycastTarget=false;
     }
@@ -56,7 +55,7 @@ public partial class CashflowGame
         var story=Label(card.transform,string.IsNullOrWhiteSpace(deal.description)?"Review the upfront payment and monthly income before deciding whether this investment fits your budget.":deal.description,19,TextAnchor.MiddleLeft);
         story.name="Deal Explanation";story.color=C("#51445b");Place(story.rectTransform,0,137,810,88);
         DealFigure(card.transform,"PAY UPFRONT",Money(deal.down),-210,53,accent);
-        DealFigure(card.transform,"ADDED MONTHLY CASHFLOW","+"+Money(deal.flow)+" / mo",210,53,C("#21756a"));
+        DealFigure(card.transform,deal.flow==0?"NO MONTHLY INCOME":"ADDED MONTHLY CASHFLOW",Money(deal.flow)+" / mo",210,53,C("#21756a"));
         bool affordable=cash>=deal.down, resolved=false;
         int loan=affordable?0:LoanNeeded(deal),interest=loan/10;
         var preview=Panel(card.transform,Vector2.one*.5f,Vector2.one*.5f,new Vector2(810,105),C("#e8eee3"));Place(preview.GetComponent<RectTransform>(),0,-48,810,105);
@@ -65,7 +64,7 @@ public partial class CashflowGame
         current.name="Current Deal Finances";current.color=C("#302540");Place(current.rectTransform,0,9,770,62);
         var funding=Label(preview.transform,affordable?"Can be paid from your cash. No additional bank loan needed.":"Buying requires a "+Money(loan)+" bank loan at "+Money(interest)+" per month. Review before confirming.",16,TextAnchor.MiddleLeft);
         funding.name="Deal Funding";funding.color=C(affordable?"#21756a":"#a84036");Place(funding.rectTransform,0,-32,770,28);
-        var terms=Label(card.transform,"Entry payment buys an investment interest, not the whole property's value.\nIncome is paid at Payday, before bank interest. Buying pays no income immediately.\nA Market offer lets you sell. Passing costs nothing.",17,TextAnchor.MiddleLeft);
+        var terms=Label(card.transform,"Entry payment buys this investment; it is not a guaranteed resale value.\n"+(deal.flow==0?"No income at Payday. Your return depends on a future sale; profit is not guaranteed.":"Income is paid at Payday, before bank interest. Buying pays no income immediately.")+"\nA Market offer lets you sell. Passing costs nothing.",17,TextAnchor.MiddleLeft);
         terms.name="Deal Terms";terms.color=C("#6a6071");Place(terms.rectTransform,0,-156,810,90);
         var buy=Button(card.transform,affordable?"BUY DEAL":"BORROW & BUY...",accent,()=>
         {
@@ -80,7 +79,7 @@ public partial class CashflowGame
         var toast=Panel(uiRoot,Vector2.one*.5f,Vector2.one*.5f,new Vector2(520,88),C("#21756a"));
         toast.name="Property Acquired";Place(toast.GetComponent<RectTransform>(),0,230,520,88);
         toast.GetComponent<Image>().sprite=RoundedSprite();
-        var text=Label(toast.transform,"INVESTMENT ACQUIRED!\n"+deal.title+"  •  +"+Money(deal.flow)+" / month",20);Stretch(text.rectTransform);
+        var text=Label(toast.transform,"INVESTMENT ACQUIRED!\n"+deal.title+(deal.flow==0?"  •  No monthly income":"  •  +"+Money(deal.flow)+" / month"),20);Stretch(text.rectTransform);
         foreach(var graphic in toast.GetComponentsInChildren<Graphic>())graphic.raycastTarget=false;
         toast.AddComponent<CardReveal>().Play(world.ReducedMotion);
         if(!world.ReducedMotion)CardSparkles.Create(toast.transform);

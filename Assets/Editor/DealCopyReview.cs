@@ -29,8 +29,11 @@ public static class DealCopyReview
         {
             var game=UnityEngine.Object.FindObjectOfType<CashflowGame>();
             Action<string,object[]> call=(name,args)=>typeof(CashflowGame).GetMethod(name,Flags).Invoke(game,args);
-            if(step==0)call("StartGame",null);
-            else if(step<=18)
+            var small=(CashflowGame.Deal[])typeof(CashflowGame).GetField("smallDeals",Flags).GetValue(game);
+            var big=(CashflowGame.Deal[])typeof(CashflowGame).GetField("bigDeals",Flags).GetValue(game);
+            var deals=small.Concat(big).ToArray();
+            if(step==0){call("StartGame",null);DealDeckReview.Validate(game);}
+            else if(step<=deals.Length*3)
             {
                 int i=(step-1)/3;
                 if(step%3==1)
@@ -38,9 +41,6 @@ public static class DealCopyReview
                     int size=i%Sizes.GetLength(0);
                     typeof(BoardReview).GetMethod("SetSize",BindingFlags.NonPublic|BindingFlags.Static).Invoke(null,new object[]{Sizes[size,0],Sizes[size,1]});
                     typeof(CashflowGame).GetField("cash",Flags).SetValue(game,i%2==0?50000:400);
-                    var small=(CashflowGame.Deal[])typeof(CashflowGame).GetField("smallDeals",Flags).GetValue(game);
-                    var big=(CashflowGame.Deal[])typeof(CashflowGame).GetField("bigDeals",Flags).GetValue(game);
-                    var deals=small.Concat(big).ToArray();
                     call("OfferDeal",new object[]{deals[i],i>=small.Length});
                 }
                 else

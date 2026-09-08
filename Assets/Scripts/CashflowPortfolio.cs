@@ -81,7 +81,7 @@ public partial class CashflowGame
         FinanceRow(card.transform,"Bank loan remaining",Money(asset.outstandingBankLoan),-24);
         FinanceRow(card.transform,"Monthly investment income",Money(asset.monthlyIncome),-66);
         FinanceRow(card.transform,"Income after bank interest",Money(asset.monthlyIncome-asset.outstandingBankLoan/10),-108);
-        var note=Label(card.transform,"Entry payment is not the whole property's price or a resale valuation.\nIncome is paid at Payday. A Market sale clears the linked loan and stops this income.",17);note.color=C("#6a6071");Place(note.rectTransform,0,-175,810,60);
+        var note=Label(card.transform,"Entry payment records what you paid, not a current resale valuation.\nIncome is paid at Payday. A Market sale clears the linked loan and stops this income.",17);note.color=C("#6a6071");Place(note.rectTransform,0,-175,810,60);
         var back=Button(card.transform,"BACK TO PORTFOLIO",C("#21756a"),()=>ShowPortfolio(page));back.name="Back To Portfolio";Place(back.GetComponent<RectTransform>(),0,-245,350,52);SetButtonText(back,Color.white,18);
     }
 }

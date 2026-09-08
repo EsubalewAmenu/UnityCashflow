@@ -49,7 +49,7 @@ public static class DealReview
                     Require(GameObject.Find("Buy Deal").GetComponent<Button>().interactable,"Affordable deal disabled");break;
                 case 4:
                     var buy=GameObject.Find("Buy Deal").GetComponent<Button>();buy.onClick.Invoke();int cash=Get("cash"),flow=Get("passive");buy.onClick.Invoke();
-                    Require(Get("cash")==cash&&Get("passive")==flow,"Purchase charged twice");Require(cash<50000&&flow>0,"Purchase did not update balances");
+                    Require(Get("cash")==cash&&Get("passive")==flow,"Purchase charged twice");Require(cash<50000&&((System.Collections.ICollection)typeof(CashflowGame).GetField("portfolio",Flags).GetValue(Game)).Count>0,"Purchase did not register investment");
                     Require(!UnityEngine.Object.FindObjectOfType<BoardWorld>().InputBlocked,"Buy did not unblock board");
                     Call("Land","OPPORTUNITY");break;
                 case 5:Click("Choose Big Deal");break;

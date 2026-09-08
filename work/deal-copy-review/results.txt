@@ -1,12 +1,36 @@
-PASS: deal 0 offer at 1394x784
-PASS: deal 0 explanation and return at 1394x784
-PASS: deal 1 offer at 392x784
-PASS: deal 1 explanation and return at 392x784
-PASS: deal 2 offer at 1568x784
-PASS: deal 2 explanation and return at 1568x784
+PASS: deal 0 offer at 1597x784
+PASS: deal 0 explanation and return at 1597x784
+PASS: deal 1 offer at 1597x784
+PASS: deal 1 explanation and return at 1597x784
+PASS: deal 2 offer at 1597x784
+PASS: deal 2 explanation and return at 1597x784
 PASS: deal 3 offer at 1597x784
 PASS: deal 3 explanation and return at 1597x784
 PASS: deal 4 offer at 1597x784
 PASS: deal 4 explanation and return at 1597x784
 PASS: deal 5 offer at 1597x784
 PASS: deal 5 explanation and return at 1597x784
+PASS: deal 6 offer at 1597x784
+PASS: deal 6 explanation and return at 1597x784
+PASS: deal 7 offer at 1597x784
+PASS: deal 7 explanation and return at 1597x784
+PASS: deal 8 offer at 1597x784
+PASS: deal 8 explanation and return at 1597x784
+PASS: deal 9 offer at 1597x784
+PASS: deal 9 explanation and return at 1597x784
+PASS: deal 10 offer at 1597x784
+PASS: deal 10 explanation and return at 1597x784
+PASS: deal 11 offer at 1597x784
+PASS: deal 11 explanation and return at 1597x784
+PASS: deal 12 offer at 1597x784
+PASS: deal 12 explanation and return at 1597x784
+PASS: deal 13 offer at 1597x784
+PASS: deal 13 explanation and return at 1597x784
+PASS: deal 14 offer at 1597x784
+PASS: deal 14 explanation and return at 1597x784
+PASS: deal 15 offer at 1597x784
+PASS: deal 15 explanation and return at 1597x784
+PASS: deal 16 offer at 1597x784
+PASS: deal 16 explanation and return at 1597x784
+PASS: deal 17 offer at 1597x784
+PASS: deal 17 explanation and return at 1597x784
