@@ -74,14 +74,14 @@ public partial class CashflowGame
     void ShowInvestment(OwnedInvestment asset,int page)
     {
         var card=CardShell("OWNED INVESTMENT",asset.title,C("#21756a"),new Vector2(900,590));
-        var story=Label(card.transform,string.IsNullOrWhiteSpace(asset.description)?"This investment contributes income at each Payday.":asset.description,20,TextAnchor.MiddleLeft);
-        story.color=C("#51445b");Place(story.rectTransform,0,133,810,76);
+        var story=Label(card.transform,string.IsNullOrWhiteSpace(asset.description)?"This investment contributes income at each Payday.":asset.description,19,TextAnchor.MiddleLeft);
+        story.color=C("#51445b");Place(story.rectTransform,0,137,810,88);
         FinanceRow(card.transform,"Paid upfront",Money(asset.upfrontCost),60);
         FinanceRow(card.transform,"Original bank borrowing",Money(asset.originalBankLoan),18);
         FinanceRow(card.transform,"Bank loan remaining",Money(asset.outstandingBankLoan),-24);
         FinanceRow(card.transform,"Monthly investment income",Money(asset.monthlyIncome),-66);
         FinanceRow(card.transform,"Income after bank interest",Money(asset.monthlyIncome-asset.outstandingBankLoan/10),-108);
-        var note=Label(card.transform,"Upfront cost is the entry payment, not a current resale valuation.\nIncome is collected at Payday. Repay bank borrowing from Finances.",17);note.color=C("#6a6071");Place(note.rectTransform,0,-175,810,60);
+        var note=Label(card.transform,"Entry payment is not the whole property's price or a resale valuation.\nIncome is paid at Payday. A Market sale clears the linked loan and stops this income.",17);note.color=C("#6a6071");Place(note.rectTransform,0,-175,810,60);
         var back=Button(card.transform,"BACK TO PORTFOLIO",C("#21756a"),()=>ShowPortfolio(page));back.name="Back To Portfolio";Place(back.GetComponent<RectTransform>(),0,-245,350,52);SetButtonText(back,Color.white,18);
     }
 }

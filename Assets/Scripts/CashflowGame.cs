@@ -35,13 +35,13 @@ public partial class CashflowGame : MonoBehaviour
     readonly string[] ratTiles = { "OPPORTUNITY", "DOODAD", "OPPORTUNITY", "CHARITY", "OPPORTUNITY", "PAYDAY", "OPPORTUNITY", "MARKET", "OPPORTUNITY", "DOODAD", "OPPORTUNITY", "BABY", "OPPORTUNITY", "PAYDAY", "OPPORTUNITY", "MARKET", "OPPORTUNITY", "DOODAD", "OPPORTUNITY", "DOWNSIZED", "OPPORTUNITY", "PAYDAY", "OPPORTUNITY", "MARKET" };
     readonly string[] fastTiles = { "CASHFLOW DAY", "BIO-TECH +25K", "DREAM", "PIZZA +18K", "TAX AUDIT", "DREAM", "CASHFLOW DAY", "GOLF +35K", "DREAM", "CLOUD +40K", "LAWSUIT", "DREAM", "CASHFLOW DAY", "CAR WASH +15K", "DREAM", "EV +30K", "DIVORCE", "DREAM", "CASHFLOW DAY", "CARGO +28K", "DREAM", "HOTEL +22K", "CORRECTION", "DREAM" };
     readonly Deal[] smallDeals = {
-        new Deal("2/1 Condo", 4000, 220, "A two-bedroom, one-bathroom condo offers rental income. Your upfront payment gives you a monthly income stream from the property."),
-        new Deal("3/2 House", 5000, 250, "A three-bedroom, two-bathroom house is available as a rental investment. Put money into the property now to receive ongoing rental cashflow."),
-        new Deal("Vending Route", 4000, 350, "Invest in a route of vending machines serving local customers. The business provides monthly cashflow from its sales."),
-        new Deal("Micro SaaS", 3000, 400, "Invest in a small subscription software business. Recurring customer subscriptions provide the monthly cashflow shown below.") };
+        new Deal("2/1 Condo", 4000, 220, "Buy an income-producing interest in a two-bedroom, one-bath condo. Rental income adds to your Payday receipts; borrowing to enter the deal creates a separate monthly interest bill."),
+        new Deal("3/2 House", 5000, 250, "Buy a rental-income interest in a three-bedroom, two-bath house. The entry payment ties up cash until you sell; weigh its monthly income against financing costs and the cash you want to keep."),
+        new Deal("Vending Route", 4000, 350, "Buy an income interest in a vending-machine route. Sales provide a fixed monthly payment in this game; you do not manage stock or pay separate restocking bills."),
+        new Deal("Micro SaaS", 3000, 400, "Buy an income interest in a subscription software business. Customer subscriptions provide a fixed monthly payment in this game; there are no separate development or hosting bills.") };
     readonly Deal[] bigDeals = {
-        new Deal("4-Plex", 10000, 800, "Invest in a building with four rental homes. Its combined rental cashflow provides a larger monthly income stream for a larger upfront payment."),
-        new Deal("Pizza Franchise", 35000, 3000, "Invest in a pizza franchise serving local customers. This business needs a substantial upfront payment and produces monthly operating cashflow.") };
+        new Deal("4-Plex", 10000, 800, "Buy an income interest in a building with four rental homes. Their rental income is combined into one payment; the game treats this as one investment that is sold together."),
+        new Deal("Pizza Franchise", 35000, 3000, "Buy an income interest in a pizza franchise. The monthly payment has no separate staffing or ingredient bills in this game. Its large entry payment can require substantial bank borrowing.") };
 
     Profession profession; string dream; int selectedDream; int cash, passive, children, position, fastPosition; bool fastTrack, charity; int skipTurns; int bankLoan;
     BoardWorld world; Button rollButton; bool rolling; GameObject modal;

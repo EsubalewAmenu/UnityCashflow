@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -29,15 +30,18 @@ public static class DealCopyReview
             var game=UnityEngine.Object.FindObjectOfType<CashflowGame>();
             Action<string,object[]> call=(name,args)=>typeof(CashflowGame).GetMethod(name,Flags).Invoke(game,args);
             if(step==0)call("StartGame",null);
-            else if(step<=8)
+            else if(step<=18)
             {
-                int i=(step-1)/2;
-                if(step%2==1)
+                int i=(step-1)/3;
+                if(step%3==1)
                 {
-                    typeof(BoardReview).GetMethod("SetSize",BindingFlags.NonPublic|BindingFlags.Static).Invoke(null,new object[]{Sizes[i,0],Sizes[i,1]});
+                    int size=i%Sizes.GetLength(0);
+                    typeof(BoardReview).GetMethod("SetSize",BindingFlags.NonPublic|BindingFlags.Static).Invoke(null,new object[]{Sizes[size,0],Sizes[size,1]});
                     typeof(CashflowGame).GetField("cash",Flags).SetValue(game,i%2==0?50000:400);
-                    var deals=(CashflowGame.Deal[])typeof(CashflowGame).GetField(i%2==0?"smallDeals":"bigDeals",Flags).GetValue(game);
-                    call("OfferDeal",new object[]{deals[deals.Length-1],i%2!=0});
+                    var small=(CashflowGame.Deal[])typeof(CashflowGame).GetField("smallDeals",Flags).GetValue(game);
+                    var big=(CashflowGame.Deal[])typeof(CashflowGame).GetField("bigDeals",Flags).GetValue(game);
+                    var deals=small.Concat(big).ToArray();
+                    call("OfferDeal",new object[]{deals[i],i>=small.Length});
                 }
                 else
                 {
@@ -49,8 +53,14 @@ public static class DealCopyReview
                         var corners=new Vector3[4];text.rectTransform.GetWorldCorners(corners);
                         foreach(var c in corners)if(c.x<0||c.y<0||c.x>Screen.width||c.y>Screen.height)throw new Exception("Text outside screen: "+text.name);
                     }
-                    ScreenCapture.CaptureScreenshot("work/deal-copy-review/card-"+Screen.width+"x"+Screen.height+".png");
-                    File.AppendAllText("work/deal-copy-review/results.txt","PASS: readable card bounds at "+Screen.width+"x"+Screen.height+"\n");
+                    bool details=step%3==0;
+                    if(details){
+                        GameObject.Find("Return From Deal Explanation").GetComponent<Button>().onClick.Invoke();
+                        if(GameObject.Find("Event Card")!=card || (int)typeof(CashflowGame).GetField("cash",Flags).GetValue(game)!=(i%2==0?50000:400))throw new Exception("Reading details changed the offer or cash");
+                    } else GameObject.Find("Explain Deal").GetComponent<Button>().onClick.Invoke();
+                    // CaptureScreenshot renders at frame end, after the button action.
+                    ScreenCapture.CaptureScreenshot("work/deal-copy-review/deal-"+i+(details?"-offer":"-details")+".png");
+                    File.AppendAllText("work/deal-copy-review/results.txt","PASS: deal "+i+(details?" explanation and return":" offer")+" at "+Screen.width+"x"+Screen.height+"\n");
                 }
             }
             else {call("CloseModal",null);File.WriteAllText("work/run-deal-review","");running=false;return;}

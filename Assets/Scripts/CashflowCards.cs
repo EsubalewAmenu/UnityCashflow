@@ -52,8 +52,9 @@ public partial class CashflowGame
         Color accent=C(big?"#654174":"#21756a");
         var card=CardShell(big?"BIG DEAL • OPPORTUNITY":"SMALL DEAL • OPPORTUNITY",deal.title,accent,new Vector2(900,590),true);
         AddDecisionReview(card);
-        var story=Label(card.transform,string.IsNullOrWhiteSpace(deal.description)?"Review the upfront payment and monthly income before deciding whether this investment fits your budget.":deal.description,20,TextAnchor.MiddleLeft);
-        story.name="Deal Explanation";story.color=C("#51445b");Place(story.rectTransform,0,133,810,76);
+        AddDealExplanation(card,deal);
+        var story=Label(card.transform,string.IsNullOrWhiteSpace(deal.description)?"Review the upfront payment and monthly income before deciding whether this investment fits your budget.":deal.description,19,TextAnchor.MiddleLeft);
+        story.name="Deal Explanation";story.color=C("#51445b");Place(story.rectTransform,0,137,810,88);
         DealFigure(card.transform,"PAY UPFRONT",Money(deal.down),-210,53,accent);
         DealFigure(card.transform,"ADDED MONTHLY CASHFLOW","+"+Money(deal.flow)+" / mo",210,53,C("#21756a"));
         bool affordable=cash>=deal.down, resolved=false;
@@ -64,7 +65,7 @@ public partial class CashflowGame
         current.name="Current Deal Finances";current.color=C("#302540");Place(current.rectTransform,0,9,770,62);
         var funding=Label(preview.transform,affordable?"Can be paid from your cash. No additional bank loan needed.":"Buying requires a "+Money(loan)+" bank loan at "+Money(interest)+" per month. Review before confirming.",16,TextAnchor.MiddleLeft);
         funding.name="Deal Funding";funding.color=C(affordable?"#21756a":"#a84036");Place(funding.rectTransform,0,-32,770,28);
-        var terms=Label(card.transform,"Upfront payment: cash needed to enter this deal.\nMonthly cashflow: income added at each Payday, before any new bank-loan interest.\nPassing costs nothing. Buying adds income; it does not pay you immediately.",17,TextAnchor.MiddleLeft);
+        var terms=Label(card.transform,"Entry payment buys an investment interest, not the whole property's value.\nIncome is paid at Payday, before bank interest. Buying pays no income immediately.\nA Market offer lets you sell. Passing costs nothing.",17,TextAnchor.MiddleLeft);
         terms.name="Deal Terms";terms.color=C("#6a6071");Place(terms.rectTransform,0,-156,810,90);
         var buy=Button(card.transform,affordable?"BUY DEAL":"BORROW & BUY...",accent,()=>
         {
