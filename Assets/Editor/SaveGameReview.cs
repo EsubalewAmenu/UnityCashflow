@@ -26,7 +26,8 @@ public static class SaveGameReview
         if(world!=null)UnityEngine.Object.DestroyImmediate(world.gameObject);
         UnityEngine.Object.DestroyImmediate(canvas.gameObject);UnityEngine.Object.DestroyImmediate(old.gameObject);
         new GameObject("Save Review Controller").AddComponent<CashflowGame>();Set("savePathOverride",path);
-        Check((bool)Call("ResumeGame"),"Fresh controller could not resume");
+        typeof(CashflowGame).GetField("resumeRequested",BindingFlags.Static|BindingFlags.NonPublic).SetValue(null,true);
+        G.OpenScene("GameBoard");Check((bool)Get("saveActive"),"GameBoard entry could not resume");
     }
     static void Shot(string name){Canvas.ForceUpdateCanvases();ScreenCapture.CaptureScreenshot(Root+name+".png");}
     static SaveGameReview(){EditorApplication.update+=Tick;}
@@ -43,7 +44,7 @@ public static class SaveGameReview
                 case 0:
                     // Keep all generated checkpoints out of the player's persistent save.
                     Set("savePathOverride",path);Call("StartGame");((BoardWorld)Get("world")).ReducedMotion=true;
-                    Set("cash",400);Call("ResetHistory");Call("OfferDeal",(CashflowGame.Deal)Call("DrawDeal",false),false);Save();expected=Snapshot();nextDeal=((CashflowGame.Deal)Call("DrawDeal",false)).title;break;
+                    Set("cash",400);Call("ResetHistory");Call("OfferDeal",(CashflowGame.Deal)Call("DrawDeal",false),false);Save();expected=Snapshot();nextDeal=((CashflowGame.Deal)Call("DrawDeal",false)).title;Set("saveActive",false);break;
                 case 1:
                     Recreate();Check(Snapshot()==expected,"Pending deal or deck changed on restore");Check(((CashflowGame.Deal)Call("DrawDeal",false)).title==nextDeal,"Draw order changed");Shot("restored-deal");
                     Call("OfferDeal",new CashflowGame.Deal("Save test house",5000,250),false);Click("Buy Deal");Save();expected=Snapshot();break;
@@ -82,8 +83,13 @@ public static class SaveGameReview
                     Call("CloseModal");Set("saveActive",false);Call("ShowSetup");Check(GameObject.Find("Resume Game")!=null,"Resume button missing");Shot("resume-opening");break;
                 case 13:
                     string disk=File.ReadAllText(path);Call("StartRandomGame");Check(GameObject.Find("Replace Saved Game")!=null,"New game did not require replacement confirmation");Click("Keep Saved Game");Check(File.ReadAllText(path)==disk,"Cancel replaced save");
+                    var data=Call("CaptureGame");data.GetType().GetField("version").SetValue(data,99);
+                    string payload=JsonUtility.ToJson(data);
+                    var envelopeType=typeof(CashflowGame).GetNestedType("SaveEnvelope",BindingFlags.NonPublic);var envelope=Activator.CreateInstance(envelopeType);
+                    envelopeType.GetField("payload").SetValue(envelope,payload);envelopeType.GetField("checksum").SetValue(envelope,typeof(CashflowGame).GetMethod("Digest",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,new object[]{payload}));
+                    string future=JsonUtility.ToJson(envelope);File.WriteAllText(path,future);File.WriteAllText(path+".bak",future);Check(!(bool)Call("ResumeGame"),"Unsupported save version accepted");
                     File.WriteAllText(path,"broken");File.WriteAllText(path+".bak","broken");Check(!(bool)Call("ResumeGame"),"Corrupt data accepted");Check(File.ReadAllText(path)=="broken","Corrupt save silently replaced");
-                    File.WriteAllText(Root+"results.txt","PASS: fresh-controller restore of exact deal/deck, financed purchase, unpaid and paid bill, duplicate guard, fixed market offer, movement checkpoint and Payday once, pause, charity, recurring expense once, Fast Track dream, reduced motion/history, corrupt-primary recovery, recovery-copy preservation, Resume UI, cancelled replacement and corrupt-save rejection. Test saves isolated from player data.\n");
+                    File.WriteAllText(Root+"results.txt","PASS: fresh-controller GameBoard entry restores exact deal/deck, financed purchase, unpaid and paid bill, duplicate guard, fixed market offer, movement checkpoint and Payday once, pause, charity, recurring expense once, Fast Track dream, reduced motion/history, corrupt-primary recovery, recovery-copy preservation, Resume UI, cancelled replacement, unsupported version and corrupt-save rejection. Test saves isolated from player data.\n");
                     Set("saveActive",false);running=false;UnityEngine.SceneManagement.SceneManager.LoadScene("ProfessionSelection");return;
             }
             step++;next=EditorApplication.timeSinceStartup+2;
