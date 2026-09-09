@@ -24,5 +24,6 @@ public partial class CashflowGame
         var again=Button(card.transform,"TRY AGAIN",C("#21756a"),StartGame);again.name="Game Over Try Again";Place(again.GetComponent<RectTransform>(),-180,-195,300,54);SetButtonText(again,Color.white,18);
         var menu=Button(card.transform,"MAIN MENU",C("#e8dcc5"),()=>{if(SaveCheckpoint()){saveActive=false;SceneManager.LoadScene("ProfessionSelection");}});menu.name="Game Over Main Menu";Place(menu.GetComponent<RectTransform>(),180,-195,300,54);SetButtonText(menu,C("#51445b"),18);
         if(rollButton!=null)rollButton.interactable=false;
+        CashflowAds.Ensure().SetBannerPlacement(true);
     }
 }

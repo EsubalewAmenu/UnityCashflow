@@ -10,16 +10,17 @@ public partial class CashflowGame
     void ShowCharityChoice()
     {
         int donation=Mathf.Max(100,Income()/10);bool resolved=false;
-        var card=CardShell("CHARITY • YOUR CHOICE","Give a little. Make a difference.",C("#a56b26"),new Vector2(740,450));
+        var card=CardShell("CHARITY • YOUR CHOICE","Choose how to take part",C("#a56b26"),new Vector2(740,570));
         pendingDecision=new PendingDecision{kind="charity"};
-        var copy=Label(card.transform,"Donate "+Money(donation)+" to roll two dice on your next roll.\nOr pass and continue with one die.",22);copy.color=C("#51445b");Place(copy.rectTransform,0,30,660,90);
-        var amount=Label(card.transform,"YOUR DONATION  "+Money(donation),29);amount.color=C("#21756a");amount.fontStyle=FontStyle.Bold;Place(amount.rectTransform,0,-45,650,46);
-        var balance=Label(card.transform,cash>=donation?"Cash after donating: "+Money(cash-donation):"Available cash: "+Money(cash)+" • Not enough to donate",16);balance.color=C("#6a6071");Place(balance.rectTransform,0,-99,650,30);
+        var copy=Label(card.transform,"Donate "+Money(donation)+" to roll two dice on your next roll.\nOr choose an available ad bonus without spending cash.\nPassing is always free.",21);copy.color=C("#51445b");Place(copy.rectTransform,0,77,660,96);
+        var amount=Label(card.transform,"YOUR DONATION  "+Money(donation),29);amount.color=C("#21756a");amount.fontStyle=FontStyle.Bold;Place(amount.rectTransform,0,-10,650,46);
+        var balance=Label(card.transform,"Current cash: "+Money(cash)+(cash<donation?" • Not enough to donate":""),16);balance.color=C("#6a6071");Place(balance.rectTransform,0,-59,650,30);
         var donate=Button(card.transform,"DONATE • 2 DICE",C("#21756a"),()=>
         {
             if(resolved||cash<donation)return;resolved=true;cash-=donation;charity=true;CloseModal();Refresh();Log("Donated "+Money(donation)+". Next roll: two dice.");
-        });donate.name="Donate Charity";donate.interactable=cash>=donation;Place(donate.GetComponent<RectTransform>(),155,-165,310,54);SetButtonText(donate,Color.white,18);
-        var pass=Button(card.transform,"PASS • 1 DIE",C("#e8dcc5"),()=>{if(resolved)return;resolved=true;charity=false;CloseModal();Log("Passed on charity. Next roll: one die.");});pass.name="Pass Charity";Place(pass.GetComponent<RectTransform>(),-180,-165,270,54);SetButtonText(pass,C("#51445b"),18);
+        });donate.name="Donate Charity";donate.interactable=cash>=donation&&!charity;Place(donate.GetComponent<RectTransform>(),170,-231,310,54);SetButtonText(donate,Color.white,18);
+        var pass=Button(card.transform,"PASS",C("#e8dcc5"),()=>{if(resolved)return;resolved=true;CloseModal();Log(charity?"Passed on charity. Your two-dice bonus is still ready.":"Passed on charity. Next roll: one die.");});pass.name="Pass Charity";Place(pass.GetComponent<RectTransform>(),-190,-231,270,54);SetButtonText(pass,C("#51445b"),18);
+        ShowCharityAdChoice(card,donate,pass,()=>resolved,()=>resolved=true);
     }
     void ShowLoanOffer(Deal deal,bool big)
     {

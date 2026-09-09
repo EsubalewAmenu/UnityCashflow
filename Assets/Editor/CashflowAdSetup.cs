@@ -1,0 +1,36 @@
+using System.IO;
+using UnityEditor;
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
+using UnityEngine;
+
+[InitializeOnLoad]
+public sealed class CashflowAdSetup : IPreprocessBuildWithReport
+{
+    static CashflowAdSetup(){EditorApplication.delayCall+=EnsureSettings;}
+    static void EnsureSettings()
+    {
+        const string path="Assets/Resources/CashflowAdSettings.asset";
+        if(AssetDatabase.LoadAssetAtPath<CashflowAdSettings>(path)!=null)return;
+        AssetDatabase.CreateAsset(ScriptableObject.CreateInstance<CashflowAdSettings>(),path);
+        AssetDatabase.SaveAssets();
+    }
+    public int callbackOrder=>-1000;
+    public void OnPreprocessBuild(BuildReport report)
+    {
+        EnsureSettings();
+        if(report.summary.platform!=BuildTarget.Android&&report.summary.platform!=BuildTarget.iOS)return;
+        // The Unity 11.5.0 Android bridge declares API 24 in its AAR manifest.
+        if(report.summary.platform==BuildTarget.Android&&PlayerSettings.Android.minSdkVersion<(AndroidSdkVersions)24)
+            PlayerSettings.Android.minSdkVersion=(AndroidSdkVersions)24;
+        var settings=Resources.Load<CashflowAdSettings>("CashflowAdSettings");
+        if((report.summary.options&BuildOptions.Development)!=0)return;
+        if(settings.useTestAds||!settings.productionPrivacyReviewed)
+            throw new BuildFailedException("AdMob is in test mode. Use a Development Build for testing. Before a store build, configure your real IDs and complete the audience/privacy review in CashflowAdSettings.");
+        string unit=report.summary.platform==BuildTarget.Android?settings.androidRewardedId:settings.iosRewardedId;
+        string banner=report.summary.platform==BuildTarget.Android?settings.androidBannerId:settings.iosBannerId;
+        string native=File.ReadAllText("Assets/GoogleMobileAds/Resources/GoogleMobileAdsSettings.asset");
+        if(string.IsNullOrWhiteSpace(unit)||(settings.enableBanners&&string.IsNullOrWhiteSpace(banner))||native.Contains("3940256099942544"))
+            throw new BuildFailedException("Production AdMob app/rewarded/banner IDs are incomplete or still use Google sample IDs.");
+    }
+}

@@ -31,7 +31,8 @@ public static class AndroidPhoneBuild
             AndroidExternalToolsSettings.jdkRootPath=Path.Combine(EditorApplication.applicationContentsPath,"PlaybackEngines","AndroidPlayer","OpenJDK");
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android,ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.targetArchitectures=AndroidArchitecture.ARM64;
-            PlayerSettings.Android.targetSdkVersion=(AndroidSdkVersions)34;
+            PlayerSettings.Android.minSdkVersion=(AndroidSdkVersions)24;
+            PlayerSettings.Android.targetSdkVersion=(AndroidSdkVersions)35;
             EditorUserBuildSettings.buildAppBundle=false;
             AssetDatabase.SaveAssets();
             var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions{
