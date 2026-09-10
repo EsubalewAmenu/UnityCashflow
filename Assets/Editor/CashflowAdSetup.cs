@@ -26,6 +26,8 @@ public sealed class CashflowAdSetup : IPreprocessBuildWithReport
             PlayerSettings.Android.minSdkVersion=(AndroidSdkVersions)24;
         var settings=Resources.Load<CashflowAdSettings>("CashflowAdSettings");
         if((report.summary.options&BuildOptions.Development)!=0)return;
+        // Internal Play tests need a non-debuggable bundle while still using sample ads.
+        if(AndroidInternalBuild.InProgress && report.summary.platform==BuildTarget.Android && settings.useTestAds)return;
         if(settings.useTestAds||!settings.productionPrivacyReviewed)
             throw new BuildFailedException("AdMob is in test mode. Use a Development Build for testing. Before a store build, configure your real IDs and complete the audience/privacy review in CashflowAdSettings.");
         string unit=report.summary.platform==BuildTarget.Android?settings.androidRewardedId:settings.iosRewardedId;
