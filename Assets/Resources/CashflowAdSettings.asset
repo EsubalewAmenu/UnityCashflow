@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d5446dbe32fa33409ba1930bc64db44, type: 3}
   m_Name: CashflowAdSettings
   m_EditorClassIdentifier: 
-  useTestAds: 1
+  useTestAds: 0
   enableBanners: 1
   productionPrivacyReviewed: 0
+  productionBuildAuthorized: 1
   androidRewardedId: ca-app-pub-8011674951494696/7902165966
   androidBannerId: ca-app-pub-8011674951494696/7156060505
   iosRewardedId: 

@@ -1,5 +1,7 @@
 # Cashflow Kingdom AdMob setup
 
+Update 12 September 2026: version 4 now uses the production IDs below with test mode disabled, as explicitly requested by the owner. See [LIVE_AD_RELEASE.md](LIVE_AD_RELEASE.md). Runtime UMP gating remains enabled; the earlier publisher privacy tasks below remain pending.
+
 Updated 9 September 2026. Android app and two ad units created and verified in AdMob. Test ads remain enabled; live monetization is not enabled.
 
 | Setting | Value |

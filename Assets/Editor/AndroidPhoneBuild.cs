@@ -28,11 +28,11 @@ public static class AndroidPhoneBuild
             if(!Directory.Exists(ndk)||!Directory.Exists(Path.Combine(sdk,"cmdline-tools","6.0")))throw new Exception("Install SDK command-line tools 6.0 and NDK 23.1.7779620 first.");
             AndroidExternalToolsSettings.sdkRootPath=sdk;
             AndroidExternalToolsSettings.ndkRootPath=ndk;
-            AndroidExternalToolsSettings.jdkRootPath=Path.Combine(EditorApplication.applicationContentsPath,"PlaybackEngines","AndroidPlayer","OpenJDK");
+            AndroidExternalToolsSettings.jdkRootPath=Path.Combine(sdk,"OpenJDK");
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android,ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.targetArchitectures=AndroidArchitecture.ARM64;
             PlayerSettings.Android.minSdkVersion=(AndroidSdkVersions)24;
-            PlayerSettings.Android.targetSdkVersion=(AndroidSdkVersions)35;
+            PlayerSettings.Android.targetSdkVersion=(AndroidSdkVersions)36;
             EditorUserBuildSettings.buildAppBundle=false;
             AssetDatabase.SaveAssets();
             var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions{

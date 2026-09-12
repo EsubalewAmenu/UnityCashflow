@@ -19,16 +19,20 @@ public static class AndroidInternalBuild
         File.Delete("work/run-internal-build");Build();
     }
     [MenuItem("Cashflow/Build Internal Test Bundle (Test Ads)")]
-    public static void Build()
+    public static void Build()=>BuildBundle(false);
+    [MenuItem("Cashflow/Build Production Bundle (Live Ads)")]
+    public static void BuildProduction()=>BuildBundle(true);
+    static void BuildBundle(bool production)
     {
-        const string root="work/internal-testing/";
+        string root=production?"work/production-v4/":"work/internal-testing/";
         Directory.CreateDirectory(root);
         bool oldCustom=PlayerSettings.Android.useCustomKeystore,oldBundle=EditorUserBuildSettings.buildAppBundle;
         string oldKey=PlayerSettings.Android.keystoreName,oldAlias=PlayerSettings.Android.keyaliasName;
         string oldPass=PlayerSettings.Android.keystorePass,oldAliasPass=PlayerSettings.Android.keyaliasPass;
         try
         {
-            if(!Resources.Load<CashflowAdSettings>("CashflowAdSettings").useTestAds)throw new Exception("Internal test bundle requires sample ads.");
+            var ads=Resources.Load<CashflowAdSettings>("CashflowAdSettings");
+            if(ads==null||ads.useTestAds==production)throw new Exception(production?"Production bundle requires live ads.":"Internal test bundle requires sample ads.");
             string password=File.ReadAllText("work/signing/upload-password.txt").Trim();
             PlayerSettings.Android.useCustomKeystore=true;
             PlayerSettings.Android.keystoreName=Path.GetFullPath("work/signing/cashflow-upload.jks");
@@ -37,21 +41,23 @@ public static class AndroidInternalBuild
             string sdk=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"UnityAndroid2022");
             AndroidExternalToolsSettings.sdkRootPath=sdk;
             AndroidExternalToolsSettings.ndkRootPath=Path.Combine(sdk,"ndk","23.1.7779620");
-            AndroidExternalToolsSettings.jdkRootPath=Path.Combine(EditorApplication.applicationContentsPath,"PlaybackEngines","AndroidPlayer","OpenJDK");
+            AndroidExternalToolsSettings.jdkRootPath=Path.Combine(sdk,"OpenJDK");
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android,ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.targetArchitectures=AndroidArchitecture.ARM64;
             PlayerSettings.Android.minSdkVersion=(AndroidSdkVersions)24;
             PlayerSettings.Android.targetSdkVersion=(AndroidSdkVersions)36;
-            PlayerSettings.Android.bundleVersionCode=Math.Max(2,PlayerSettings.Android.bundleVersionCode);
+            PlayerSettings.Android.bundleVersionCode=Math.Max(production?4:3,PlayerSettings.Android.bundleVersionCode);
             EditorUserBuildSettings.buildAppBundle=true;
-            InProgress=true;
+            EditorUserBuildSettings.androidCreateSymbols=AndroidCreateSymbols.Public;
+            InProgress=!production;
             var report=BuildPipeline.BuildPlayer(new BuildPlayerOptions{
                 scenes=EditorBuildSettings.scenes.Where(s=>s.enabled).Select(s=>s.path).ToArray(),
                 locationPathName=root+"CashflowKingdom.aab",target=BuildTarget.Android,options=BuildOptions.None
             });
             File.WriteAllText(root+"result.txt",DateTime.Now+" "+report.summary.result+"; errors="+report.summary.totalErrors+"; duration="+report.summary.totalTime);
+            if(report.summary.result!=BuildResult.Succeeded)throw new Exception("Android bundle build failed: "+report.summary.result);
         }
-        catch(Exception error){File.WriteAllText(root+"result.txt",error.ToString());Debug.LogException(error);}
+        catch(Exception error){File.WriteAllText(root+"result.txt",error.ToString());Debug.LogException(error);throw;}
         finally
         {
             InProgress=false;EditorUserBuildSettings.buildAppBundle=oldBundle;

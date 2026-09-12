@@ -6,11 +6,13 @@ public sealed class CashflowAdSettings : ScriptableObject
     public bool useTestAds=true;
     public bool enableBanners=true;
     public bool productionPrivacyReviewed;
+    // Owner-authorized artifact preparation, separate from completed privacy review.
+    public bool productionBuildAuthorized;
     public string androidRewardedId="",androidBannerId="",iosRewardedId="",iosBannerId="";
     // Do not enable production until audience and privacy declarations are reviewed.
     public bool childDirected,underAgeOfConsent;
     public string[] testDeviceIds=new string[0];
-    public bool CanInitialize=>useTestAds||productionPrivacyReviewed;
+    public bool CanInitialize=>useTestAds||productionPrivacyReviewed||productionBuildAuthorized;
     public string RewardedId=>useTestAds?(Application.platform==RuntimePlatform.IPhonePlayer?
         "ca-app-pub-3940256099942544/1712485313":"ca-app-pub-3940256099942544/5224354917"):
         (Application.platform==RuntimePlatform.IPhonePlayer?iosRewardedId:androidRewardedId);
