@@ -84,6 +84,11 @@ public static class AdMobReview
                     Call("CloseModal");Set("cash",10000);Set("bankLoan",0);Set("position",6);
                     oldCash=(int)Get("cash");Call("CompleteMovement",4,2);
                     Check((int)Get("cash")==oldCash+(int)Call("Income")-(int)Call("Expenses"),"Payday settlement wrong");
+                    Check(JsonUtility.ToJson(Get("pendingDecision")).Contains("choice")&&!CashflowAds.Instance.FullScreen&&fake.interstitialShows==0,"Passing Payday interrupted destination with an ad break");
+                    Call("CloseModal");oldCash=(int)Get("cash");Call("ShowPaydayBreak","OPPORTUNITY",123,1);
+                    Check((int)Get("cash")==oldCash&&JsonUtility.ToJson(Get("pendingDecision")).Contains("choice"),"Legacy passing-Payday checkpoint replayed break or payment");
+                    Call("CloseModal");Set("position",5);Call("CompleteMovement",4,1);
+                    Check((int)Get("cash")==oldCash+(int)Call("Income")-(int)Call("Expenses"),"Landing Payday settlement wrong");
                     Check(Get("modal")!=null&&JsonUtility.ToJson(Get("pendingDecision")).Contains("payday-break"),"Salary popup missing");
                     Check((bool)Call("SaveCheckpoint",false),"Payday checkpoint failed");oldCash=(int)Get("cash");
                     Check((bool)Call("ResumeGame")&&(int)Get("cash")==oldCash,"Payday resume paid twice");
@@ -102,7 +107,12 @@ public static class AdMobReview
                     Call("ShowDownsizeBreak");B("Ad Break OK").onClick.Invoke();
                     Check(!CashflowAds.Instance.FullScreen&&Time.timeScale==1&&Get("modal")==null,"Show failure blocked play");
                     CashflowAds.Instance.Settings.interstitialCooldownSeconds=90;
-                    Set("saveActive",false);Call("ShowSetup");
+                    Call("CloseModal");Set("fastTrack",true);Set("fastPosition",8);Set("cash",100000);Set("bankLoan",0);
+                    oldCash=(int)Get("cash");Call("CompleteMovement",5,3);
+                    Check((int)Get("cash")!=oldCash&&!JsonUtility.ToJson(Get("pendingDecision")).Contains("payday-break")&&!CashflowAds.Instance.FullScreen,"Passing Cashflow Day showed a break or missed settlement");
+                    Call("CloseModal");Set("fastPosition",6);Call("CompleteMovement",5,1);
+                    Check(JsonUtility.ToJson(Get("pendingDecision")).Contains("payday-break"),"Landing Cashflow Day popup missing");
+                    Call("CloseModal");Set("saveActive",false);Call("ShowSetup");
                     File.WriteAllText(Root+"results.txt","PASS: reward lifecycle; gameplay top banner and popup safe area at 1280x720, 2532x1170, 2340x1080; Payday settlement and resume without duplicate payment; no-fill continuation; Downsized interstitial exactly once; close/failure recovery; cooldown and audio/time restoration. Deterministic fake ads; mobile SDK delivery needs device verification.\n");
                     running=false;EditorApplication.isPlaying=false;return;
             }

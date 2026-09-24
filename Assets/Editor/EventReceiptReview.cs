@@ -37,7 +37,7 @@ public static class EventReceiptReview
                 case 0:Call("StartGame");((BoardWorld)Get("world")).ReducedMotion=true;break;
                 case 1:
                     int before=(int)Get("cash"),net=(int)Call("Income")-(int)Call("Expenses");
-                    Set("position",6);Call("CompleteMovement",4,2);
+                    Set("position",5);Call("CompleteMovement",4,1);
                     Check((int)Get("cash")==before+net&&Get("modal")!=null,"Payday settlement or break missing");
                     Check(JsonUtility.ToJson(Get("pendingDecision")).Contains("payday-break"),"Payday did not defer destination");Shot("payday-break");break;
                 case 2:Call("CloseModal");Set("cash",400);Call("ShowRequiredExpense","CAR REPAIR","Your car needs an urgent repair.",900,2);Shot("specific-bill");break;

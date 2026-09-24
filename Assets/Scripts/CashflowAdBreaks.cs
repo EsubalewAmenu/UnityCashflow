@@ -18,11 +18,15 @@ public partial class CashflowGame
         CollectMovementPaydays(start,steps);
         if(CheckGameOver())return;
         string destination=fastTrack?fastTiles[fastPosition]:ratTiles[position];
-        if(count>0)ShowPaydayBreak(destination,cash-previousCash,count);
+        if(count>0&&IsPaydayDestination(destination))ShowPaydayBreak(destination,cash-previousCash,count);
         else Land(destination);
     }
+    bool IsPaydayDestination(string destination)=>destination==(fastTrack?"CASHFLOW DAY":"PAYDAY");
     void ShowPaydayBreak(string destination,int amount,int count)
     {
+        // Older saves may have paused after passing Payday. Payment was already
+        // settled; resolve their destination without replaying a break or ad.
+        if(!IsPaydayDestination(destination)){pendingDecision=new PendingDecision();Land(destination);return;}
         string heading=fastTrack?"IT'S CASHFLOW DAY":"IT'S SALARY DAY";
         string details=(count>1?count+" Paydays settled\n":"")+"Income minus expenses: "+SignedMoney(amount)+
             "\nCash now: "+Money(cash)+"\n\nYour payment is already settled. Take a short break.\nAn ad may play after OK; if unavailable, play continues.";

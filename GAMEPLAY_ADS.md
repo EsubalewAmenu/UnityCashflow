@@ -11,7 +11,7 @@ Included in the signed version-5 AAB in `work/production-v5/`, together with the
 
 ## Turn flow
 
-Payday settles its financial effects once when movement finishes, then shows the salary/cashflow-day popup instead of the old top receipt. Multiple crossed Paydays are combined into one break. OK opens a ready interstitial if eligible, otherwise proceeds directly to the destination tile. Negative net cashflow is shown as a deduction; game-over handling takes priority.
+Payday settles its financial effects once when movement finishes. The salary/cashflow-day popup and optional interstitial appear only when the player lands on that space. Passing it settles the payment and immediately resolves the destination without a break. Older saves paused at a passing-Payday break also continue directly without another payment. OK on a landing popup opens a ready interstitial if eligible, otherwise continues play. Negative net cashflow is shown as a deduction; game-over handling takes priority. This landing-only refinement is in source and is not included in the previously built version-5 AAB.
 
 Downsized first shows the existing expense/borrowing decision. After payment, the short-break popup offers the same OK flow. Skipped turns do not show more ads. No ad changes salary, expenses, borrowing or skipped-turn counts.
 
