@@ -14,6 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useTestAds: 0
   enableBanners: 1
+  enableGameplayBanner: 1
+  enableInterstitials: 1
+  interstitialCooldownSeconds: 90
+  androidGameplayBannerId: ca-app-pub-8011674951494696/6021118406
+  androidInterstitialId: ca-app-pub-8011674951494696/5841069288
+  iosGameplayBannerId:
+  iosInterstitialId:
   productionPrivacyReviewed: 0
   productionBuildAuthorized: 1
   androidRewardedId: ca-app-pub-8011674951494696/7902165966

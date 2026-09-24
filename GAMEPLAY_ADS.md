@@ -1,0 +1,24 @@
+# Gameplay advertising — 24 September 2026
+
+Implemented in source; no new AAB was built or published for this change. The existing version-4 AAB predates these placements.
+
+## Placements
+
+- Gameplay adaptive banner: `ca-app-pub-8011674951494696/6021118406`, anchored at the top, above the header. Safe-area layout reserves its reported height plus separation from controls. The board camera adjusts to the remaining viewport. Gameplay popups retain the banner. Native full-screen ads and consent forms temporarily hide it; it returns afterward. No-fill leaves the space available to gameplay.
+- Shared Payday/Downsized interstitial: `ca-app-pub-8011674951494696/5841069288`. Preloaded after consent, expires after 55 minutes, retries with bounded backoff. No blocking wait for a load and no delayed ad after the player has continued.
+- Existing menu/results banner and optional rewarded charity placements retain their IDs.
+- A 90-second cooldown after any closed full-screen ad prevents consecutive interstitials. Configurable in `CashflowAdSettings`; it does not restrict voluntarily requested rewarded ads.
+
+## Turn flow
+
+Payday settles its financial effects once when movement finishes, then shows the salary/cashflow-day popup instead of the old top receipt. Multiple crossed Paydays are combined into one break. OK opens a ready interstitial if eligible, otherwise proceeds directly to the destination tile. Negative net cashflow is shown as a deduction; game-over handling takes priority.
+
+Downsized first shows the existing expense/borrowing decision. After payment, the short-break popup offers the same OK flow. Skipped turns do not show more ads. No ad changes salary, expenses, borrowing or skipped-turn counts.
+
+The checkpoint preserves whether a salary break is awaiting acknowledgment or its destination is awaiting resolution. Resuming cannot collect salary again, and resuming after acknowledgment resolves the tile without replaying the ad. Audio and time scale are restored after close or show failure. Duplicate confirmation/callbacks are ignored.
+
+## Validation
+
+Unity 2022.3.62f3 compiled and ran the isolated save/resume and expanded ad suites successfully. Tests use fake ads, never click or request production ads for verification. Covered reward lifecycle, missing interstitial, show exception, duplicate close/confirm, cooldown, finance invariants, salary resume and layout snapshots at 1280x720, 2532x1170 and 2340x1080. The Pixel 5 popup screenshot was visually inspected. Evidence is in `work/gameplay-ads-review/`.
+
+Real SDK delivery, consent and native banner placement still require a device test. Production IDs are configured and test mode remains disabled as requested; existing publisher privacy status is unchanged. Use sample ads or registered test devices for further device validation.

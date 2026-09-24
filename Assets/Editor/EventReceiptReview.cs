@@ -37,10 +37,9 @@ public static class EventReceiptReview
                 case 0:Call("StartGame");((BoardWorld)Get("world")).ReducedMotion=true;break;
                 case 1:
                     int before=(int)Get("cash"),net=(int)Call("Income")-(int)Call("Expenses");
-                    Call("CollectMovementPaydays",4,1);Call("Land","PAYDAY");
-                    Check((int)Get("cash")==before+net&&Get("modal")==null,"Landing duplicated payment or opened a blocking modal");
-                    Call("Refresh");Call("ShowDealChoice");Check(R.transform.GetSiblingIndex()>((GameObject)Get("modal")).transform.GetSiblingIndex(),"Next card obscures Payday receipt");
-                    Check(!R.GetComponent<CanvasGroup>().blocksRaycasts,"Receipt blocks input");Check(R.Title.text.Contains("PAYDAY"),"Missing Payday receipt");Shot("payday-with-deal");break;
+                    Set("position",6);Call("CompleteMovement",4,2);
+                    Check((int)Get("cash")==before+net&&Get("modal")!=null,"Payday settlement or break missing");
+                    Check(JsonUtility.ToJson(Get("pendingDecision")).Contains("payday-break"),"Payday did not defer destination");Shot("payday-break");break;
                 case 2:Call("CloseModal");Set("cash",400);Call("ShowRequiredExpense","CAR REPAIR","Your car needs an urgent repair.",900,2);Shot("specific-bill");break;
                 case 3:
                     var pay=GameObject.Find("Pay Required Expense").GetComponent<Button>();pay.onClick.Invoke();pay.onClick.Invoke();
@@ -48,12 +47,12 @@ public static class EventReceiptReview
                 case 4:Check(R.Title.text.Contains("CAR REPAIR")&&R.Detail.text.Contains("Monthly interest +$100"),"Expense receipt missing borrowing cost");Call("ShowStatement");Shot("paid-receipt");break;
                 case 5:Call("CloseModal");int cash=(int)Get("cash"),expense=(int)Call("Expenses");Call("Land","BABY");Check((int)Get("cash")==cash&&(int)Call("Expenses")>expense,"Recurring event changed cash");Shot("monthly-change");break;
                 case 6:Call("StartGame");break;
-                case 7:Set("fastTrack",true);Set("bankLoan",100000);Call("Payday");Check(R.Title.text.Contains("CASHFLOW DAY • -$"),"Negative Cashflow Day presented as collection");Call("Land","CASHFLOW DAY");Check(Get("modal")==null,"Cashflow Day blocks play");break;
+                case 7:Set("fastTrack",true);Set("cash",100000);Set("bankLoan",100000);int previous=(int)Get("cash");Call("Payday");Check((int)Get("cash")<previous,"Negative Cashflow Day not deducted");Call("ShowPaydayBreak","CASHFLOW DAY",(int)Get("cash")-previous,1);Shot("negative-cashflow-break");R.Show("FIRST RECEIPT","Queued",Color.black);break;
                 case 8:
                     // Verify FIFO instead of overwriting a receipt when two events arrive together.
                     R.Show("SECOND RECEIPT","Queued",Color.black);Check(!R.Title.text.Contains("SECOND"),"Receipt overwritten");break;
                 case 11:Check(R.Title.text=="SECOND RECEIPT","Queued receipt never appeared");Call("StartGame");break;
-                case 12:Check(R.GetComponent<CanvasGroup>().alpha==0,"Old receipt survived a new game");File.WriteAllText(Root+"results.txt","PASS: landing paid once without modal; receipt visible above following deal and non-interactive; specific bill and borrowing receipt; duplicate-payment guard; recurring child expense without immediate cash charge; negative Fast Track receipt; FIFO queue and new-game reset; card text bounds. Screenshots at "+Screen.width+"x"+Screen.height+".\n");running=false;return;
+                case 12:Check(R.GetComponent<CanvasGroup>().alpha==0,"Old receipt survived a new game");File.WriteAllText(Root+"results.txt","PASS: Payday paid once with deferred landing popup; specific bill and borrowing receipt; duplicate-payment guard; recurring child expense without immediate cash charge; negative Fast Track popup; FIFO receipts and new-game reset; card text bounds. Screenshots at "+Screen.width+"x"+Screen.height+".\n");running=false;return;
             }
             step++;next=EditorApplication.timeSinceStartup+2;
         }catch(Exception e){running=false;File.WriteAllText(Root+"results.txt","FAIL: "+e);Debug.LogException(e);}

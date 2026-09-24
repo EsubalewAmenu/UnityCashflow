@@ -127,6 +127,7 @@ public partial class CashflowGame : MonoBehaviour
         rolling=false;modal=null;
         ClearUI();
         SetOpeningBackdrop(false);
+        CashflowAds.Ensure().SetBannerPlacement(true,true);
         uiRoot.Find("Background").GetComponent<Image>().color=Color.clear;
         var top=Panel(uiRoot,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(360,44),C("#49375f"));Place(top.GetComponent<RectTransform>(),-433,325,360,44);top.GetComponent<Image>().sprite=RoundedSprite();top.GetComponent<Image>().type=Image.Type.Sliced;
         header=Label(top.transform,"",16);Stretch(header.rectTransform);
@@ -202,12 +203,12 @@ public partial class CashflowGame : MonoBehaviour
     }
     GameObject Modal(Vector2 size)
     {
-        CloseModal(); CashflowAds.Ensure().SetBannerPlacement(false); modal=Panel(uiRoot,Vector2.zero,Vector2.one,Vector2.zero,new Color(.06f,.04f,.12f,.7f));modal.name="Modal Blocker";
+        CloseModal(); UpdateBannerPlacement(true); modal=Panel(uiRoot,Vector2.zero,Vector2.one,Vector2.zero,new Color(.06f,.04f,.12f,.7f));modal.name="Modal Blocker";
         if(eventReceipt!=null)eventReceipt.transform.SetAsLastSibling();
         var panel=Panel(modal.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),size,C("#302540"));panel.GetComponent<Image>().sprite=RoundedSprite();panel.GetComponent<Image>().type=Image.Type.Sliced;
         if(world!=null)world.InputBlocked=true;if(rollButton!=null)rollButton.interactable=false;return panel;
     }
-    void CloseModal(){pendingDecision=new PendingDecision();if(modal!=null){modal.SetActive(false);Destroy(modal);modal=null;}if(world!=null)world.InputBlocked=false;if(rollButton!=null)rollButton.interactable=!rolling&&!gameOver;CashflowAds.Ensure().SetBannerPlacement(openingBackdrop!=null&&openingBackdrop.activeSelf);}
+    void CloseModal(){pendingDecision=new PendingDecision();if(modal!=null){modal.SetActive(false);Destroy(modal);modal=null;}if(world!=null)world.InputBlocked=false;if(rollButton!=null)rollButton.interactable=!rolling&&!gameOver;UpdateBannerPlacement(false);}
     GameObject Panel(Transform p,Vector2 aMin,Vector2 aMax,Vector2 size,Color c){var go=new GameObject("Panel",typeof(RectTransform),typeof(Image));go.transform.SetParent(p,false);var r=go.GetComponent<RectTransform>();r.anchorMin=aMin;r.anchorMax=aMax;r.sizeDelta=size;go.GetComponent<Image>().color=c;return go;}
     void Place(RectTransform r,float x,float y,float w,float h){r.anchorMin=r.anchorMax=new Vector2(.5f,.5f);r.anchoredPosition=new Vector2(x,y);r.sizeDelta=new Vector2(w,h);}
     void DrawBoard()
@@ -306,7 +307,7 @@ public partial class CashflowGame : MonoBehaviour
     }
     Color TileColor(string s){if(s.Contains("PAYDAY")||s.Contains("CASHFLOW"))return C("#80b66b");if(s.Contains("OPPORTUNITY")||s.Contains("+"))return C("#d89458");if(s.Contains("DOODAD")||s.Contains("AUDIT")||s.Contains("LAWSUIT")||s.Contains("DIVORCE"))return C("#c9756c");if(s.Contains("DREAM"))return C("#9c80b2");if(s.Contains("MARKET"))return C("#68a6b2");return C("#839ac0");}
     void MoveToken(){if(world!=null)world.PlacePawn(fastTrack?fastPosition:position,fastTrack);}
-    void Roll(){if(gameWon||gameOver||rolling||modal!=null)return;if(fastTrackIntro){fastTrackIntro=false;ShowFastTrackIntro();return;}if(skipTurns>0){skipTurns--;Log("Downsized: turn skipped ("+skipTurns+" left).");Refresh();ShowEventPanel("TURN SKIPPED",skipTurns>0?skipTurns+" skipped turn remains.":"You can roll again on your next turn.",C("#654174"));return;}StartCoroutine(RollTurn());}
+    void Roll(){if(gameWon||gameOver||rolling||modal!=null||CashflowAds.Ensure().FullScreen)return;if(fastTrackIntro){fastTrackIntro=false;ShowFastTrackIntro();return;}if(skipTurns>0){skipTurns--;Log("Downsized: turn skipped ("+skipTurns+" left).");Refresh();ShowEventPanel("TURN SKIPPED",skipTurns>0?skipTurns+" skipped turn remains.":"You can roll again on your next turn.",C("#654174"));return;}StartCoroutine(RollTurn());}
     IEnumerator RollTurn()
     {
         SaveCheckpoint();rolling=true;rollButton.interactable=false;HideHover();diceResult.text="ROLLING...";
@@ -316,8 +317,8 @@ public partial class CashflowGame : MonoBehaviour
         pendingDecision=new PendingDecision{kind="move",amount=die};SaveCheckpoint(true);
         yield return world.MovePawn(old,die,fastTrack);
         if(fastTrack)fastPosition=(old+die)%24;else position=(old+die)%24;
-        pendingDecision=new PendingDecision();CollectMovementPaydays(old,die);
-        if(!CheckGameOver())Land(fastTrack?fastTiles[fastPosition]:ratTiles[position]);Refresh();rolling=false;UpdateTurnStatus();rollButton.interactable=modal==null&&!gameOver;SaveCheckpoint();
+        pendingDecision=new PendingDecision();CompleteMovement(old,die);
+        Refresh();rolling=false;UpdateTurnStatus();rollButton.interactable=modal==null&&!gameOver;SaveCheckpoint();
     }
     // Include the destination, but never the starting space. Movement owns the
     // payment so landing on Payday cannot collect it a second time.
@@ -339,7 +340,7 @@ public partial class CashflowGame : MonoBehaviour
     }
     int Expenses(){return profession.taxes+PersonalDebtPayments()+profession.other+children*profession.childPay+LoanPayment();}
     int Income(){return (fastTrack?0:profession.salary)+passive;}
-    void Payday(){int amount=Income()-Expenses();cash+=amount;string title=fastTrack?"CASHFLOW DAY":"PAYDAY";Log(title+": cash "+SignedMoney(amount)+".");Receipt(title+" • "+SignedMoney(amount),"Income "+Money(Income())+" − expenses "+Money(Expenses())+" • Cash now "+Money(cash),amount<0?C("#873d3a"):C("#21756a"));if(world!=null)world.Audio.Payday();}
+    void Payday(){int amount=Income()-Expenses();cash+=amount;string title=fastTrack?"CASHFLOW DAY":"PAYDAY";Log(title+": cash "+SignedMoney(amount)+".");if(world!=null)world.Audio.Payday();}
     void CheckEscape(){if(!fastTrack&&passive>Expenses()){fastTrack=true;fastPosition=0;fastTrackIntro=true;DrawBoard();MoveToken();Log("You escaped the Rat Race! Welcome to the Fast Track.");}}
     void Refresh()
     {

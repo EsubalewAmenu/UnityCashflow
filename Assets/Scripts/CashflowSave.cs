@@ -93,6 +93,8 @@ public partial class CashflowGame
         var p=s.pending;
         switch(p.kind){
             case "":case "choice":case "charity":case "dream":case "intro":case "event":return true;
+            case "payday-break":case "land-after-break":return Array.IndexOf(fastTiles,p.title)>=0||Array.IndexOf(ratTiles,p.title)>=0;
+            case "downsize-break":return true;
             case "deal":case "loan":return p.deal!=null&&p.deal.down>=0&&p.deal.flow>=0;
             case "bill":return p.amount>=0&&p.turns>=0;
             case "market":return p.amount>=0&&ids.Contains(p.assetId);
@@ -135,13 +137,16 @@ public partial class CashflowGame
             case "intro":ShowFastTrackIntro();break;
             case "event":ShowEventPanel(p.title,p.detail,p.color);break;
             case "move":FinishSavedMovement(p.amount);break;
+            case "payday-break":ShowPaydayBreak(p.title,p.amount,p.turns);break;
+            case "land-after-break":Land(p.title);break;
+            case "downsize-break":ShowDownsizeBreak();break;
         }
     }
     void FinishSavedMovement(int steps)
     {
         int old=fastTrack?fastPosition:position;
         if(fastTrack)fastPosition=(old+steps)%24;else position=(old+steps)%24;
-        pendingDecision=new PendingDecision();MoveToken();CollectMovementPaydays(old,steps);if(!CheckGameOver())Land(fastTrack?fastTiles[fastPosition]:ratTiles[position]);
+        pendingDecision=new PendingDecision();MoveToken();CompleteMovement(old,steps);
     }
     void LateUpdate(){if(Time.unscaledTime<nextSaveCheck)return;nextSaveCheck=Time.unscaledTime+.5f;SaveCheckpoint();}
     void OnApplicationPause(bool paused){if(paused)SaveCheckpoint();}

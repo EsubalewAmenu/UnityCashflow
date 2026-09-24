@@ -12,7 +12,8 @@ public static class UnitySecurityReview
     static int stage { get=>SessionState.GetInt(Key+"stage",0); set=>SessionState.SetInt(Key+"stage",value); }
     static string result { get=>SessionState.GetString(Key+"result",""); set=>SessionState.SetString(Key+"result",value); }
     static DateTime previousResult { get=>new DateTime(long.Parse(SessionState.GetString(Key+"previous","0")),DateTimeKind.Utc); set=>SessionState.SetString(Key+"previous",value.Ticks.ToString()); }
-    static UnitySecurityReview(){if(SessionState.GetBool(Key+"active",false))EditorApplication.update+=Tick;}
+    static UnitySecurityReview(){EditorApplication.update+=CheckTrigger;if(SessionState.GetBool(Key+"active",false))EditorApplication.update+=Tick;}
+    static void CheckTrigger(){if(!File.Exists("work/run-security-review")||EditorApplication.isCompiling||EditorApplication.isPlayingOrWillChangePlaymode)return;File.Delete("work/run-security-review");Run();}
     public static void Run()
     {
         if(Application.unityVersion!=UnitySecurityBuildGuard.ValidatedEditor)

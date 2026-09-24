@@ -1,5 +1,7 @@
 # Cashflow Kingdom AdMob setup
 
+Update 24 September 2026: gameplay top banner and shared Payday/Downsized interstitial added in source using the new owner-provided production IDs. See [GAMEPLAY_ADS.md](GAMEPLAY_ADS.md). The old version-4 AAB does not contain these changes.
+
 Update 12 September 2026: version 4 now uses the production IDs below with test mode disabled, as explicitly requested by the owner. See [LIVE_AD_RELEASE.md](LIVE_AD_RELEASE.md). Runtime UMP gating remains enabled; the earlier publisher privacy tasks below remain pending.
 
 Updated 9 September 2026. Android app and two ad units created and verified in AdMob. Test ads remain enabled; live monetization is not enabled.

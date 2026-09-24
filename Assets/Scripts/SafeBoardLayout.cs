@@ -14,7 +14,8 @@ public class SafeBoardLayout : MonoBehaviour
         if (safe.width <= 0 || safe.height <= 0 || safe.xMin < 0 || safe.yMin < 0 || safe.xMax > Screen.width || safe.yMax > Screen.height)
             safe = new Rect(0,0,Screen.width,Screen.height);
         float adHeight=CashflowAds.Instance!=null?CashflowAds.Instance.ReservedBottomPixels:0;
-        // Reserve space above the bottom safe inset; board play has no banner.
+        float topAdHeight=CashflowAds.Instance!=null?CashflowAds.Instance.ReservedTopPixels:0;
+        safe.yMax-=Mathf.Min(topAdHeight,safe.height*.35f);
         safe.yMin+=Mathf.Min(adHeight,safe.height*.35f);
         float sx = parent.rect.width / Screen.width, sy = parent.rect.height / Screen.height;
         float scale = Mathf.Min((safe.width * sx - 24) / 1280, (safe.height * sy - 24) / 720);

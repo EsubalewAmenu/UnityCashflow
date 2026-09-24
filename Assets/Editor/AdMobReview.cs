@@ -70,14 +70,40 @@ public static class AdMobReview
                     Check(corners[0].y>=Screen.safeArea.yMin+136,"Menu overlaps banner slot");if(!Shot("menu-iphone12"))return;
                     Call("ShowSaveMessage","TEST","Test dialog",null);Check(CashflowAds.Instance.ReservedBottomPixels==0,"Banner visible over menu dialog");
                     Call("CloseModal");Check(CashflowAds.Instance.ReservedBottomPixels>0,"Menu banner not restored");
-                    Call("StartGame");Check(CashflowAds.Instance.ReservedBottomPixels==0,"Banner on board");
+                    Call("StartGame");Check(CashflowAds.Instance.ReservedTopPixels==136,"Gameplay top banner missing");
                     Size(2340,1080);Call("ShowCharityChoice");break;
                 case 8:if(!Shot("charity-pixel5"))return;Call("CloseModal");Set("cash",-1);Set("bankLoan",1000000);Call("Refresh");break;
                 case 9:
                     Check(CashflowAds.Instance.ReservedBottomPixels>0,"Results banner missing");if(!Shot("results-pixel5"))return;
-                    Call("StartGame");Check(CashflowAds.Instance.ReservedBottomPixels==0,"Results banner leaked into retry");
+                    Call("StartGame");Check(CashflowAds.Instance.ReservedTopPixels==136&&CashflowAds.Instance.ReservedBottomPixels==0,"Gameplay banner not restored on retry");
+                    Call("ShowCharityChoice");break;
+                case 10:
+                    Check(CashflowAds.Instance.ReservedTopPixels==136,"Popup hid gameplay banner");
+                    var gameplayRoot=(RectTransform)Get("uiRoot");var topCorners=new Vector3[4];gameplayRoot.GetWorldCorners(topCorners);
+                    Check(topCorners[1].y<=Screen.safeArea.yMax-136+1,"Gameplay popup overlaps top banner");
+                    Call("CloseModal");Set("cash",10000);Set("bankLoan",0);Set("position",6);
+                    oldCash=(int)Get("cash");Call("CompleteMovement",4,2);
+                    Check((int)Get("cash")==oldCash+(int)Call("Income")-(int)Call("Expenses"),"Payday settlement wrong");
+                    Check(Get("modal")!=null&&JsonUtility.ToJson(Get("pendingDecision")).Contains("payday-break"),"Salary popup missing");
+                    Check((bool)Call("SaveCheckpoint",false),"Payday checkpoint failed");oldCash=(int)Get("cash");
+                    Check((bool)Call("ResumeGame")&&(int)Get("cash")==oldCash,"Payday resume paid twice");
+                    fake.interstitialReady=false;B("Ad Break OK").onClick.Invoke();
+                    Check(!CashflowAds.Instance.FullScreen&&!JsonUtility.ToJson(Get("pendingDecision")).Contains("payday-break"),"No fill blocked landing");
+                    Call("CloseModal");Set("skipTurns",2);Call("ShowDownsizeBreak");break;
+                case 11:
+                    CashflowAds.Instance.Settings.interstitialCooldownSeconds=0;fake.interstitialReady=true;
+                    var confirm=B("Ad Break OK");oldCash=(int)Get("cash");confirm.onClick.Invoke();confirm.onClick.Invoke();
+                    Check(fake.interstitialShows==1&&CashflowAds.Instance.FullScreen&&AudioListener.pause&&Time.timeScale==0,"Interstitial did not pause exactly once");
+                    fake.close();fake.close();Check(!CashflowAds.Instance.FullScreen&&Time.timeScale==1&&!AudioListener.pause,"Interstitial close did not restore game");
+                    Check((int)Get("cash")==oldCash&&(int)Get("skipTurns")==2,"Downsized ad changed finances/turns");
+                    CashflowAds.Instance.Settings.interstitialCooldownSeconds=90;fake.interstitialReady=true;
+                    Call("ShowDownsizeBreak");B("Ad Break OK").onClick.Invoke();Check(fake.interstitialShows==1&&!CashflowAds.Instance.FullScreen,"Cooldown failed");
+                    CashflowAds.Instance.Settings.interstitialCooldownSeconds=0;fake.throwInterstitial=true;
+                    Call("ShowDownsizeBreak");B("Ad Break OK").onClick.Invoke();
+                    Check(!CashflowAds.Instance.FullScreen&&Time.timeScale==1&&Get("modal")==null,"Show failure blocked play");
+                    CashflowAds.Instance.Settings.interstitialCooldownSeconds=90;
                     Set("saveActive",false);Call("ShowSetup");
-                    File.WriteAllText(Root+"results.txt","PASS: no fill, early close, reward exactly once, no cash deduction, reward survives resume, no stacking, pass keeps existing reward, donation unchanged, low cash fallback, audio/time restoration, menu/results reservation and modal/board suppression. Layouts: 1280x720, 2532x1170, 2340x1080. Deterministic fake ad provider; real mobile SDK delivery needs device verification.\n");
+                    File.WriteAllText(Root+"results.txt","PASS: reward lifecycle; gameplay top banner and popup safe area at 1280x720, 2532x1170, 2340x1080; Payday settlement and resume without duplicate payment; no-fill continuation; Downsized interstitial exactly once; close/failure recovery; cooldown and audio/time restoration. Deterministic fake ads; mobile SDK delivery needs device verification.\n");
                     running=false;EditorApplication.isPlaying=false;return;
             }
             step++;next=EditorApplication.timeSinceStartup+2;
@@ -87,11 +113,14 @@ public static class AdMobReview
     {
         public bool ready,visible;public Action earn,close;
         public bool RewardReady=>ready;
+        public bool interstitialReady,throwInterstitial;public int interstitialShows;
+        public bool InterstitialReady=>interstitialReady;
         public bool PrivacyRequired=>false;
         public float BannerHeight=>visible?136:0;
         public void Start(CashflowAdSettings s){}
         public void Tick(){}
-        public void SetBanner(bool show){visible=show;}
+        public void SetBanner(bool show,bool gameplay=false){visible=show;}
+        public void ShowInterstitial(Action closed){interstitialReady=false;interstitialShows++;if(throwInterstitial)throw new Exception("Simulated show failure");close=closed;}
         public void ShowReward(Action earned,Action closed){ready=false;earn=earned;close=closed;}
         public void ShowPrivacy(Action closed){closed();}
         public void Dispose(){}

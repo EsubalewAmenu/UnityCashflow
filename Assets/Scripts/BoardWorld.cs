@@ -145,7 +145,8 @@ public sealed class BoardWorld : MonoBehaviour
     void UpdateCamera(bool instant)
     {
         // Render scenery edge to edge; only interactive HUD elements use the safe area.
-        View.rect=new Rect(0,.14f,1,.86f);
+        float banner=CashflowAds.Instance!=null?CashflowAds.Instance.ReservedTopPixels/Mathf.Max(1,Screen.height):0;
+        View.rect=new Rect(0,.14f,1,Mathf.Max(.25f,.86f-banner));
         Vector3 target=Busy?Vector3.zero:Follow?Pawn.position+new Vector3(0,0,.35f):Vector3.zero;
         focus=instant?target:Vector3.Lerp(focus,target,1-Mathf.Exp(-Time.unscaledDeltaTime*5));
         float distance=Busy?6.8f:Follow?5.8f:OverviewDistance();

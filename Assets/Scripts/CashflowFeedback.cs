@@ -87,7 +87,8 @@ public partial class CashflowGame
             if(resolved)return;resolved=true;
             int needed=Mathf.CeilToInt(Mathf.Max(0,cost-cash)/1000f)*1000;bankLoan+=needed;cash+=needed-cost;skipTurns=turns;
             CloseModal();Log(title+": paid "+Money(cost)+(needed>0?"; borrowed "+Money(needed):"")+(turns>0?"; skip "+turns+" turns.":"."));Refresh();world.Audio.Expense();
-            Receipt(title+" • PAID "+Money(cost),needed>0?"Borrowed "+Money(needed)+" • Monthly interest +"+Money(needed/10):"One-time payment • Monthly cashflow unchanged",C("#873d3a"));
+            if(title=="DOWNSIZED"&&!gameOver){ShowDownsizeBreak();SaveCheckpoint();}
+            else Receipt(title+" • PAID "+Money(cost),needed>0?"Borrowed "+Money(needed)+" • Monthly interest +"+Money(needed/10):"One-time payment • Monthly cashflow unchanged",C("#873d3a"));
         });pay.name="Pay Required Expense";Place(pay.GetComponent<RectTransform>(),0,-245,400,54);SetButtonText(pay,Color.white,18);
     }
 }

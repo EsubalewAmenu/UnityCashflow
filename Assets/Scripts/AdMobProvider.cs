@@ -9,6 +9,12 @@ public sealed class AdMobProvider : ICashflowAdProvider
 {
     CashflowAdSettings settings;
     RewardedAd reward;
+    InterstitialAd interstitial;
+    bool interstitialLoading,gameplayBanner;
+    float interstitialRetryAt,interstitialLoadedAt;
+    int interstitialFailures;
+    public bool InterstitialReady=>!disposed&&!privacyOpen&&adsAllowed&&interstitial!=null&&
+        Time.realtimeSinceStartup-interstitialLoadedAt<3300&&interstitial.CanShowAd();
     BannerView banner;
     bool initialized,initializing,disposed,loading,bannerWanted,bannerLoaded,adsAllowed,privacyOpen;
     float retryAt,loadedAt,bannerRetryAt;
@@ -42,13 +48,15 @@ public sealed class AdMobProvider : ICashflowAdProvider
     {
         if(initialized||initializing||!adsAllowed)return;
         initializing=true;
-        MobileAds.Initialize(status=>Main(()=>{initialized=true;initializing=false;LoadReward();SetBanner(bannerWanted);}));
+        MobileAds.Initialize(status=>Main(()=>{initialized=true;initializing=false;LoadReward();SetBanner(bannerWanted,gameplayBanner);}));
     }
     public void Tick()
     {
         if(!initialized||disposed||privacyOpen||!adsAllowed)return;
         if(reward!=null&&Time.realtimeSinceStartup-loadedAt>=3300){reward.Destroy();reward=null;}
         if(!loading&&reward==null&&Time.realtimeSinceStartup>=retryAt)LoadReward();
+        if(interstitial!=null&&Time.realtimeSinceStartup-interstitialLoadedAt>=3300){interstitial.Destroy();interstitial=null;}
+        if(settings.enableInterstitials&&!interstitialLoading&&interstitial==null&&Time.realtimeSinceStartup>=interstitialRetryAt)LoadInterstitial();
         if(bannerWanted&&(screen!=new Vector2(Screen.width,Screen.height)||bannerSafeArea!=Screen.safeArea))DestroyBanner();
         if(bannerWanted&&banner==null&&Time.realtimeSinceStartup>=bannerRetryAt)CreateBanner();
     }
@@ -79,8 +87,29 @@ public sealed class AdMobProvider : ICashflowAdProvider
         try{ad.Show(value=>Main(()=>{if(!finished)earned();}));}
         catch{finish();throw;}
     }
-    public void SetBanner(bool visible)
+    void LoadInterstitial()
     {
+        if(string.IsNullOrWhiteSpace(settings.InterstitialId))return;
+        interstitialLoading=true;int requestGeneration=generation;
+        InterstitialAd.Load(settings.InterstitialId,new AdRequest(),(ad,error)=>MobileAdsEventExecutor.ExecuteInUpdate(()=>{
+            if(disposed||requestGeneration!=generation){ad?.Destroy();return;}
+            interstitialLoading=false;
+            if(error!=null||ad==null){ad?.Destroy();interstitialRetryAt=Time.realtimeSinceStartup+Backoff(++interstitialFailures);return;}
+            interstitial=ad;interstitialLoadedAt=Time.realtimeSinceStartup;interstitialFailures=0;
+        }));
+    }
+    public void ShowInterstitial(Action closed)
+    {
+        if(!InterstitialReady){closed();return;}
+        var ad=interstitial;interstitial=null;bool finished=false;
+        Action finish=()=>{if(finished)return;finished=true;ad.Destroy();interstitialRetryAt=Time.realtimeSinceStartup+2;closed();};
+        ad.OnAdFullScreenContentClosed+=()=>Main(finish);
+        ad.OnAdFullScreenContentFailed+=error=>Main(finish);
+        try{ad.Show();}catch{finish();throw;}
+    }
+    public void SetBanner(bool visible,bool gameplay=false)
+    {
+        if(gameplayBanner!=gameplay){DestroyBanner();gameplayBanner=gameplay;bannerRetryAt=0;}
         bannerWanted=visible;
         if(!visible){banner?.Hide();return;}
         if(!initialized||privacyOpen||!adsAllowed)return;
@@ -89,10 +118,11 @@ public sealed class AdMobProvider : ICashflowAdProvider
     }
     void CreateBanner()
     {
-        if(string.IsNullOrWhiteSpace(settings.BannerId))return;
+        string id=gameplayBanner?settings.GameplayBannerId:settings.BannerId;
+        if(string.IsNullOrWhiteSpace(id))return;
         screen=new Vector2(Screen.width,Screen.height);bannerSafeArea=Screen.safeArea;
         var size=AdSize.GetCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth(MobileAds.Utils.GetDeviceSafeWidth());
-        var view=new BannerView(settings.BannerId,size,AdPosition.Bottom);banner=view;view.Hide();
+        var view=new BannerView(id,size,gameplayBanner?AdPosition.Top:AdPosition.Bottom);banner=view;view.Hide();
         view.OnBannerAdLoaded+=()=>Main(()=>{
             if(banner!=view)return;bannerLoaded=true;bannerFailures=0;
             if(bannerWanted)view.Show();else view.Hide();
@@ -107,10 +137,11 @@ public sealed class AdMobProvider : ICashflowAdProvider
     {
         // Retire cached ads when privacy choices change; reload under the new state.
         privacyOpen=true;generation++;loading=false;DestroyBanner();reward?.Destroy();reward=null;
+        interstitialLoading=false;interstitial?.Destroy();interstitial=null;
         ConsentForm.ShowPrivacyOptionsForm(error=>Main(()=>{
             if(error!=null)Debug.LogWarning("Ad privacy options could not be displayed. Please try again.");
             privacyOpen=false;UpdateConsent();closed();
         }));
     }
-    public void Dispose(){disposed=true;reward?.Destroy();reward=null;DestroyBanner();}
+    public void Dispose(){disposed=true;reward?.Destroy();reward=null;interstitial?.Destroy();interstitial=null;DestroyBanner();}
 }

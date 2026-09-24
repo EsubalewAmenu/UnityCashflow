@@ -34,6 +34,11 @@ public sealed class CashflowAdSetup : IPreprocessBuildWithReport
         if(!settings.productionPrivacyReviewed)
             Debug.LogWarning("Owner authorized preparing this live-ad artifact before publisher privacy setup is complete. Runtime UMP consent checks remain required.");
         string banner=report.summary.platform==BuildTarget.Android?settings.androidBannerId:settings.iosBannerId;
+        string gameplayBanner=report.summary.platform==BuildTarget.Android?settings.androidGameplayBannerId:settings.iosGameplayBannerId;
+        string interstitial=report.summary.platform==BuildTarget.Android?settings.androidInterstitialId:settings.iosInterstitialId;
+        if((settings.enableBanners&&settings.enableGameplayBanner&&!ValidProductionId(gameplayBanner,"/"))||
+            (settings.enableInterstitials&&!ValidProductionId(interstitial,"/")))
+            throw new BuildFailedException("Production gameplay banner/interstitial IDs are incomplete or sample IDs.");
         string native=File.ReadAllText("Assets/GoogleMobileAds/Resources/GoogleMobileAdsSettings.asset");
         string appField=report.summary.platform==BuildTarget.Android?"adMobAndroidAppId":"adMobIOSAppId";
         string appId=Regex.Match(native,@"(?m)^\s*"+appField+@":\s*(ca-app-pub-[0-9]+~[0-9]+)").Groups[1].Value;
