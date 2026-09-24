@@ -20,7 +20,7 @@ public partial class CashflowGame
     {
         ClearUI();SetOpeningBackdrop(true);uiRoot.Find("Background").GetComponent<Image>().color=Color.clear;
         var logo=Label(uiRoot,"CASHFLOW KINGDOM",34);logo.fontStyle=FontStyle.Bold;logo.color=C("#ffe3a0");Place(logo.rectTransform,30,302,550,58);
-        var crown=new GameObject("Kingdom Crown",typeof(RectTransform),typeof(RawImage));crown.transform.SetParent(uiRoot,false);crown.GetComponent<RawImage>().texture=Resources.Load<Texture2D>("Branding/kingdom-icon");crown.GetComponent<RawImage>().raycastTarget=false;Place(crown.GetComponent<RectTransform>(),-274,302,48,48);
+        var logoMark=new GameObject("Cashflow Logo",typeof(RectTransform),typeof(RawImage));logoMark.transform.SetParent(uiRoot,false);logoMark.GetComponent<RawImage>().texture=Resources.Load<Texture2D>("Branding/kingdom-icon");logoMark.GetComponent<RawImage>().raycastTarget=false;Place(logoMark.GetComponent<RectTransform>(),-274,302,48,48);
         var outline=logo.gameObject.AddComponent<Outline>();outline.effectColor=C("#443050");outline.effectDistance=new Vector2(3,-3);
         var tag=Label(uiRoot,"THE GAME OF FINANCIAL FREEDOM",12);tag.color=C("#443050");Place(tag.rectTransform,0,261,520,22);
         var title=Label(uiRoot,dreamsPage?"Choose your dream":"Choose your profession",32);title.fontStyle=FontStyle.Bold;Place(title.rectTransform,0,207,750,46);

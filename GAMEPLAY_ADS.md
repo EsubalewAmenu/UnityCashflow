@@ -1,6 +1,6 @@
 # Gameplay advertising — 24 September 2026
 
-Implemented in source; no new AAB was built or published for this change. The existing version-4 AAB predates these placements.
+Included in the signed version-5 AAB in `work/production-v5/`, together with the new finance logo. See `RELEASE_V5.md`. The existing version-4 AAB predates these placements. No upload or publication was performed.
 
 ## Placements
 

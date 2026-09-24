@@ -10,7 +10,10 @@ public static class KingdomBranding
     static void Tick(){
         if(!File.Exists("work/run-kingdom-branding")||EditorApplication.isCompiling)return;
         File.Delete("work/run-kingdom-branding");
-        foreach(string name in new[]{"kingdom-icon","kingdom-logo"}){
+        Apply();
+    }
+    public static void Apply(){
+        foreach(string name in new[]{"kingdom-icon"}){
             var importer=(TextureImporter)AssetImporter.GetAtPath("Assets/Resources/Branding/"+name+".png");
             importer.textureCompression=TextureImporterCompression.Uncompressed;importer.maxTextureSize=4096;importer.npotScale=TextureImporterNPOTScale.None;importer.mipmapEnabled=false;importer.isReadable=true;importer.SaveAndReimport();
         }
@@ -26,12 +29,11 @@ public static class KingdomBranding
         }
         Directory.CreateDirectory("work/play-store");
         Export(icon,512,512,"work/play-store/app-icon.png");
-        Export(AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Resources/Branding/kingdom-logo.png"),1024,500,"work/play-store/feature-graphic.png");
-        AssetDatabase.SaveAssets();File.WriteAllText("work/play-store/branding-results.txt","PASS: product name and default/Android icons assigned; original logo exported as 1024x500 feature graphic; square icon exported as 512x512 PNG.");
+        AssetDatabase.SaveAssets();File.WriteAllText("work/play-store/branding-results.txt","PASS: finance icon assigned to default and Android legacy/round icons; Google Play icon exported as 512x512 RGBA PNG.");
     }
     // Platform-required sizing only; the supplied artwork is not redrawn.
     static void Export(Texture2D source,int width,int height,string path){
-        var output=new Texture2D(width,height,TextureFormat.RGB24,false);
+        var output=new Texture2D(width,height,TextureFormat.RGBA32,false);
         float ratio=width/(float)height,sourceRatio=source.width/(float)source.height;
         float sx=Mathf.Min(1,ratio/sourceRatio),sy=Mathf.Min(1,sourceRatio/ratio);
         for(int y=0;y<height;y++)for(int x=0;x<width;x++)output.SetPixel(x,y,source.GetPixelBilinear((1-sx)/2+(x+.5f)/width*sx,(1-sy)/2+(y+.5f)/height*sy));

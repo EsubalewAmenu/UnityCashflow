@@ -24,13 +24,15 @@ public static class AndroidInternalBuild
     public static void BuildProduction()=>BuildBundle(true);
     static void BuildBundle(bool production)
     {
-        string root=production?"work/production-v4/":"work/internal-testing/";
+        if(production)PlayerSettings.Android.bundleVersionCode=Math.Max(5,PlayerSettings.Android.bundleVersionCode);
+        string root=production?"work/production-v"+PlayerSettings.Android.bundleVersionCode+"/":"work/internal-testing/";
         Directory.CreateDirectory(root);
         bool oldCustom=PlayerSettings.Android.useCustomKeystore,oldBundle=EditorUserBuildSettings.buildAppBundle;
         string oldKey=PlayerSettings.Android.keystoreName,oldAlias=PlayerSettings.Android.keyaliasName;
         string oldPass=PlayerSettings.Android.keystorePass,oldAliasPass=PlayerSettings.Android.keyaliasPass;
         try
         {
+            KingdomBranding.Apply();
             var ads=Resources.Load<CashflowAdSettings>("CashflowAdSettings");
             if(ads==null||ads.useTestAds==production)throw new Exception(production?"Production bundle requires live ads.":"Internal test bundle requires sample ads.");
             string password=File.ReadAllText("work/signing/upload-password.txt").Trim();
@@ -46,7 +48,7 @@ public static class AndroidInternalBuild
             PlayerSettings.Android.targetArchitectures=AndroidArchitecture.ARM64;
             PlayerSettings.Android.minSdkVersion=(AndroidSdkVersions)24;
             PlayerSettings.Android.targetSdkVersion=(AndroidSdkVersions)36;
-            PlayerSettings.Android.bundleVersionCode=Math.Max(production?4:3,PlayerSettings.Android.bundleVersionCode);
+            PlayerSettings.Android.bundleVersionCode=Math.Max(production?5:3,PlayerSettings.Android.bundleVersionCode);
             EditorUserBuildSettings.buildAppBundle=true;
             EditorUserBuildSettings.androidCreateSymbols=AndroidCreateSymbols.Public;
             InProgress=!production;

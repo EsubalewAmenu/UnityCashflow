@@ -174,7 +174,7 @@ PlayerSettings:
     iPhone: 0
     tvOS: 0
   overrideDefaultApplicationIdentifier: 1
-  AndroidBundleVersionCode: 4
+  AndroidBundleVersionCode: 5
   AndroidMinSdkVersion: 24
   AndroidTargetSdkVersion: 36
   AndroidPreferredInstallLocation: 1
@@ -332,36 +332,6 @@ PlayerSettings:
       m_Height: 81
       m_Kind: 2
       m_SubKind:
-    - m_Textures: []
-      m_Width: 192
-      m_Height: 192
-      m_Kind: 1
-      m_SubKind:
-    - m_Textures: []
-      m_Width: 144
-      m_Height: 144
-      m_Kind: 1
-      m_SubKind:
-    - m_Textures: []
-      m_Width: 96
-      m_Height: 96
-      m_Kind: 1
-      m_SubKind:
-    - m_Textures: []
-      m_Width: 72
-      m_Height: 72
-      m_Kind: 1
-      m_SubKind:
-    - m_Textures: []
-      m_Width: 48
-      m_Height: 48
-      m_Kind: 1
-      m_SubKind:
-    - m_Textures: []
-      m_Width: 36
-      m_Height: 36
-      m_Kind: 1
-      m_SubKind:
     - m_Textures:
       - {fileID: 2800000, guid: ff648f5e73ee76943aba88ab6ad85b9e, type: 3}
       m_Width: 192
@@ -397,6 +367,42 @@ PlayerSettings:
       m_Width: 36
       m_Height: 36
       m_Kind: 0
+      m_SubKind:
+    - m_Textures:
+      - {fileID: 2800000, guid: ff648f5e73ee76943aba88ab6ad85b9e, type: 3}
+      m_Width: 192
+      m_Height: 192
+      m_Kind: 1
+      m_SubKind:
+    - m_Textures:
+      - {fileID: 2800000, guid: ff648f5e73ee76943aba88ab6ad85b9e, type: 3}
+      m_Width: 144
+      m_Height: 144
+      m_Kind: 1
+      m_SubKind:
+    - m_Textures:
+      - {fileID: 2800000, guid: ff648f5e73ee76943aba88ab6ad85b9e, type: 3}
+      m_Width: 96
+      m_Height: 96
+      m_Kind: 1
+      m_SubKind:
+    - m_Textures:
+      - {fileID: 2800000, guid: ff648f5e73ee76943aba88ab6ad85b9e, type: 3}
+      m_Width: 72
+      m_Height: 72
+      m_Kind: 1
+      m_SubKind:
+    - m_Textures:
+      - {fileID: 2800000, guid: ff648f5e73ee76943aba88ab6ad85b9e, type: 3}
+      m_Width: 48
+      m_Height: 48
+      m_Kind: 1
+      m_SubKind:
+    - m_Textures:
+      - {fileID: 2800000, guid: ff648f5e73ee76943aba88ab6ad85b9e, type: 3}
+      m_Width: 36
+      m_Height: 36
+      m_Kind: 1
       m_SubKind:
   m_BuildTargetBatching: []
   m_BuildTargetShaderSettings: []
