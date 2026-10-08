@@ -8,7 +8,7 @@ public partial class CashflowGame
     bool CheckGameOver()
     {
         if(gameOver)return true;
-        if(gameWon||profession==null||cash>=0||Income()-Expenses()>=0)return false;
+        if(gameWon||profession==null||!CashflowRules.IsBankrupt(cash,Income()-Expenses()))return false;
         gameOver=true;fastTrackIntro=false;pendingDecision=new PendingDecision();
         Log("Game over: cash and net monthly cashflow are both negative.");
         if(world!=null)ShowGameOver();
@@ -16,6 +16,7 @@ public partial class CashflowGame
     }
     void ShowGameOver()
     {
+        if(localMatch!=null){ShowLocalElimination();return;}
         var card=CardShell("GAME OVER","Your finances need a fresh start",C("#a84036"),new Vector2(800,500));
         FinanceRow(card.transform,"Cash balance",Money(cash),85);
         FinanceRow(card.transform,"Net monthly cashflow",Money(Income()-Expenses())+" / month",30);

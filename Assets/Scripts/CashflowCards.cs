@@ -14,8 +14,8 @@ public partial class CashflowGame
         Place(ribbon.GetComponent<RectTransform>(),0,size.y/2-13,size.x-24,8);
         var tag=Label(card.transform,category,13);tag.color=accent;tag.fontStyle=FontStyle.Bold;Place(tag.rectTransform,0,size.y/2-42,size.x-50,22);
         var heading=Label(card.transform,title,29);heading.color=C("#302540");heading.fontStyle=FontStyle.Bold;Place(heading.rectTransform,0,size.y/2-85,size.x-60,48);
-        card.AddComponent<CardReveal>().Play(world.ReducedMotion,flip);
-        world.Audio.Card();
+        card.AddComponent<CardReveal>().Play(world!=null&&world.ReducedMotion,flip);
+        if(world!=null&&world.Audio!=null)world.Audio.Card();
         return card;
     }
     void ShowDealChoice()

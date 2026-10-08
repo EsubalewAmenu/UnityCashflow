@@ -12,6 +12,7 @@ public partial class CashflowGame
     }
     void ShowCharityAdChoice(GameObject card,Button donate,Button pass,System.Func<bool> isResolved,System.Action markResolved)
     {
+        if(localMatch!=null)return;
         var ads=CashflowAds.Ensure();
         var watch=Button(card.transform,"WATCH AD • 2 DICE NEXT ROLL",C("#654174"),()=>{});
         watch.name="Watch Charity Ad";Place(watch.GetComponent<RectTransform>(),0,-157,650,50);SetButtonText(watch,Color.white,18);

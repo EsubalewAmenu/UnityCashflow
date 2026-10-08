@@ -47,6 +47,7 @@ public partial class CashflowGame
     };
     bool SaveCheckpoint(bool moving=false)
     {
+        if(localMatch!=null)return SaveLocalMatch(moving);
         if(!saveActive||restoring||(!moving&&rolling))return true;
         if(!moving)CheckGameOver();
         try{
@@ -107,13 +108,7 @@ public partial class CashflowGame
         if(!ReadSave(out var s,out bool recovered)){saveActive=false;ShowSetup();ShowSaveMessage("Save unavailable","The saved game could not be read. It has not been replaced. You can start a new game.");return false;}
         restoring=true;
         try{
-            profession=s.profession;int professionIndex=Array.FindIndex(professions,p=>p.name==profession.name);if(professionIndex>=0)professions[professionIndex]=profession;
-            selectedDream=s.selectedDream;dream=dreams[selectedDream];cash=s.cash;children=s.children;position=s.position;fastPosition=s.fastPosition;
-            skipTurns=s.skipTurns;bankLoan=s.bankLoan;lastRoll=s.lastRoll;fastTrack=s.fastTrack;charity=s.charity;gameWon=s.gameWon;gameOver=s.gameOver;fastTrackIntro=s.fastTrackIntro;
-            portfolio.Clear();portfolio.AddRange(s.portfolio);personalDebts.Clear();personalDebts.AddRange(s.debts);passive=0;foreach(var a in portfolio)passive+=a.monthlyIncome;
-            smallDrawPile.Clear();smallDrawPile.AddRange(s.smallPile);bigDrawPile.Clear();bigDrawPile.AddRange(s.bigPile);lastSmallDeal=s.lastSmall;lastBigDeal=s.lastBig;
-            history.Clear();history.AddRange(s.history);historyCash=s.historyCash;historyFlow=s.historyFlow;historyDebt=s.historyDebt;
-            pendingDecision=new PendingDecision();BuildGame();world.ReducedMotion=s.reducedMotion;
+            ApplyPlayerState(s);
             RestoreDecision(s.pending);Refresh();saveActive=true;lastSavedPayload=null;recoveredSave=recovered;
             if(recovered)Receipt("PROGRESS RECOVERED","Loaded the previous complete checkpoint.",C("#873d3a"));
         }finally{restoring=false;}
@@ -121,6 +116,16 @@ public partial class CashflowGame
         lastSavedPayload=JsonUtility.ToJson(CaptureGame());
         if(s.pending.kind=="move"){lastSavedPayload=null;SaveCheckpoint();}
         return true;
+    }
+    void ApplyPlayerState(SavedGame s)
+    {
+            profession=s.profession;int professionIndex=Array.FindIndex(professions,p=>p.name==profession.name);if(professionIndex>=0)professions[professionIndex]=profession;
+            selectedDream=s.selectedDream;dream=dreams[selectedDream];cash=s.cash;children=s.children;position=s.position;fastPosition=s.fastPosition;
+            skipTurns=s.skipTurns;bankLoan=s.bankLoan;lastRoll=s.lastRoll;fastTrack=s.fastTrack;charity=s.charity;gameWon=s.gameWon;gameOver=s.gameOver;fastTrackIntro=s.fastTrackIntro;
+            portfolio.Clear();portfolio.AddRange(s.portfolio);personalDebts.Clear();personalDebts.AddRange(s.debts);passive=0;foreach(var a in portfolio)passive+=a.monthlyIncome;
+            smallDrawPile.Clear();smallDrawPile.AddRange(s.smallPile);bigDrawPile.Clear();bigDrawPile.AddRange(s.bigPile);lastSmallDeal=s.lastSmall;lastBigDeal=s.lastBig;
+            history.Clear();history.AddRange(s.history);historyCash=s.historyCash;historyFlow=s.historyFlow;historyDebt=s.historyDebt;
+            pendingDecision=new PendingDecision();BuildGame();world.ReducedMotion=s.reducedMotion;
     }
     void RestoreDecision(PendingDecision p)
     {
@@ -148,7 +153,7 @@ public partial class CashflowGame
         if(fastTrack)fastPosition=(old+steps)%24;else position=(old+steps)%24;
         pendingDecision=new PendingDecision();MoveToken();CompleteMovement(old,steps);
     }
-    void LateUpdate(){if(Time.unscaledTime<nextSaveCheck)return;nextSaveCheck=Time.unscaledTime+.5f;SaveCheckpoint();}
+    void LateUpdate(){UpdateLocalTurn();if(Time.unscaledTime<nextSaveCheck)return;nextSaveCheck=Time.unscaledTime+.5f;SaveCheckpoint();}
     void OnApplicationPause(bool paused){if(paused)SaveCheckpoint();}
     void OnApplicationFocus(bool focused){if(!focused)SaveCheckpoint();}
     void OnApplicationQuit(){SaveCheckpoint();}

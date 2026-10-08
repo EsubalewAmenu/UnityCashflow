@@ -27,7 +27,7 @@ public partial class CashflowGame
         var shadow=title.gameObject.AddComponent<Shadow>();shadow.effectColor=C("#443050");shadow.effectDistance=new Vector2(1,-2);
         var previous=OpeningButton(uiRoot,"‹",()=>ChangeOpeningSelection(dreamsPage,-1));previous.name="Previous Selection";Place(previous.GetComponent<RectTransform>(),-589,-20,54,74);SetButtonText(previous,C("#443050"),40);
         var next=OpeningButton(uiRoot,"›",()=>ChangeOpeningSelection(dreamsPage,1));next.name="Next Selection";Place(next.GetComponent<RectTransform>(),589,-20,54,74);SetButtonText(next,C("#443050"),40);
-        AddRandomStart();if(!dreamsPage)AddResumeButton();
+        AddRandomStart();AddLocalMatchButton();if(!dreamsPage)AddResumeButton();
         AddAdPrivacyButton(uiRoot,455,302,265,36);
         CashflowAds.Ensure().SetBannerPlacement(true);
         if(dreamsPage){var back=OpeningButton(uiRoot,"‹  PROFESSION",ShowSetup);back.name="Back to Profession";Place(back.GetComponent<RectTransform>(),-495,301,210,44);SetButtonText(back,C("#443050"),14);}

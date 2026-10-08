@@ -18,7 +18,7 @@ public partial class CashflowGame
         CollectMovementPaydays(start,steps);
         if(CheckGameOver())return;
         string destination=fastTrack?fastTiles[fastPosition]:ratTiles[position];
-        if(count>0&&IsPaydayDestination(destination))ShowPaydayBreak(destination,cash-previousCash,count);
+        if(localMatch==null&&count>0&&IsPaydayDestination(destination))ShowPaydayBreak(destination,cash-previousCash,count);
         else Land(destination);
     }
     bool IsPaydayDestination(string destination)=>destination==(fastTrack?"CASHFLOW DAY":"PAYDAY");
@@ -36,6 +36,7 @@ public partial class CashflowGame
     }
     void ShowDownsizeBreak()
     {
+        if(localMatch!=null){Refresh();SaveCheckpoint();return;}
         ShowAdBreak("TAKE A SHORT BREAK","Your Downsized payment is settled.\nYou will skip "+skipTurns+" turns.\n\nAn ad may play after OK; if unavailable, play continues.",
             new PendingDecision{kind="downsize-break"},CloseModal,()=>{Refresh();SaveCheckpoint();});
     }

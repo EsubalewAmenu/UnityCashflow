@@ -17,6 +17,7 @@ public partial class CashflowGame
     void StartRandomGame(){ConfirmNewGame(()=>{ChooseRandomSelections();SceneManager.LoadScene("GameBoard");});}
     void ShowExitGame()
     {
+        if(localMatch!=null){ShowLocalExit();return;}
         if(rolling||modal!=null)return;
         var card=CardShell("GAME MENU","Return to the main menu?",C("#654174"),new Vector2(800,440));
         var copy=Label(card.transform,"Your progress is saved automatically.\nChoose Resume Game on the main menu to continue.",22);
