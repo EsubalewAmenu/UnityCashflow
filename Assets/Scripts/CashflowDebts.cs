@@ -83,7 +83,7 @@ public partial class CashflowGame
         var terms=Label(card.transform,"Game rule: 10% interest per month, in $1,000 steps.\nInterest does not pay down the balance. Repay principal separately.",19);terms.color=C("#51445b");Place(terms.rectTransform,0,-90,810,65);
         var less=Button(card.transform,"− $1,000",C("#e8dcc5"),()=>ShowBankBorrow(amount-1000));less.name="Borrow Less";less.interactable=amount>1000;Place(less.GetComponent<RectTransform>(),-190,-160,300,45);SetButtonText(less,C("#51445b"),18);
         var more=Button(card.transform,"+ $1,000",C("#e8dcc5"),()=>ShowBankBorrow(amount+1000));more.name="Borrow More";more.interactable=amount<1000000;Place(more.GetComponent<RectTransform>(),190,-160,300,45);SetButtonText(more,C("#51445b"),18);
-        bool resolved=false;var confirm=Button(card.transform,"CONFIRM BORROWING",C("#654174"),()=>{if(resolved)return;resolved=true;cash+=amount;bankLoan+=amount;Log("Borrowed "+Money(amount)+". Monthly interest added: "+Money(amount/10)+".");Refresh();ShowStatement();});confirm.name="Confirm Borrowing";Place(confirm.GetComponent<RectTransform>(),200,-240,360,52);SetButtonText(confirm,Color.white,18);
+        bool resolved=false;var confirm=Button(card.transform,"CONFIRM BORROWING",C("#654174"),()=>{if(resolved)return;var balance=CashflowRules.Borrow(cash,bankLoan,amount);resolved=true;cash=balance.cash;bankLoan=balance.loan;Log("Borrowed "+Money(amount)+". Monthly interest added: "+Money(amount/10)+".");Refresh();ShowStatement();});confirm.name="Confirm Borrowing";Place(confirm.GetComponent<RectTransform>(),200,-240,360,52);SetButtonText(confirm,Color.white,18);
         DebtBack(card.transform,ShowStatement);
     }
 }

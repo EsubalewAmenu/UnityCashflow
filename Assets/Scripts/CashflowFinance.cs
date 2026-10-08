@@ -6,7 +6,7 @@ public partial class CashflowGame
     // Game bank rules: $1,000 principal increments, $100 monthly interest per increment.
     // Interest is an expense; principal is paid back separately from Finances.
     int LoanPayment(){return bankLoan/10;}
-    int LoanNeeded(Deal deal){return Mathf.CeilToInt(Mathf.Max(0,deal.down-cash)/1000f)*1000;}
+    int LoanNeeded(Deal deal){return CashflowRules.RequiredLoan(cash,deal.down);}
     void ShowCharityChoice()
     {
         int donation=Mathf.Max(100,Income()/10);bool resolved=false;

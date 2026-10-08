@@ -16,13 +16,14 @@ public partial class CashflowGame
 
     void PurchaseInvestment(Deal deal,int loan)
     {
+        var balance=CashflowRules.Purchase(cash,bankLoan,deal.down,loan);
         portfolio.Add(new OwnedInvestment {
             id=Guid.NewGuid().ToString("N"),title=deal.title,description=deal.description,
             upfrontCost=deal.down,monthlyIncome=deal.flow,
             originalBankLoan=loan,outstandingBankLoan=loan
         });
-        cash+=loan-deal.down;
-        bankLoan+=loan;
+        cash=balance.cash;
+        bankLoan=balance.loan;
         passive=0;
         foreach(var asset in portfolio)passive+=asset.monthlyIncome;
     }

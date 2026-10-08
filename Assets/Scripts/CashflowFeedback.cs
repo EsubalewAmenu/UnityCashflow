@@ -85,7 +85,7 @@ public partial class CashflowGame
         var note=Label(card.transform,noteText,19);note.color=C("#51445b");Place(note.rectTransform,0,-175,810,80);
         bool resolved=false;var pay=Button(card.transform,loan>0?"BORROW & PAY":"PAY EXPENSE",C("#a84036"),()=>{
             if(resolved)return;resolved=true;
-            int needed=Mathf.CeilToInt(Mathf.Max(0,cost-cash)/1000f)*1000;bankLoan+=needed;cash+=needed-cost;skipTurns=turns;
+            int needed=CashflowRules.RequiredLoan(cash,cost);var balance=CashflowRules.Purchase(cash,bankLoan,cost,needed);bankLoan=balance.loan;cash=balance.cash;skipTurns=turns;
             CloseModal();Log(title+": paid "+Money(cost)+(needed>0?"; borrowed "+Money(needed):"")+(turns>0?"; skip "+turns+" turns.":"."));Refresh();world.Audio.Expense();
             if(title=="DOWNSIZED"&&!gameOver){ShowDownsizeBreak();SaveCheckpoint();}
             else Receipt(title+" • PAID "+Money(cost),needed>0?"Borrowed "+Money(needed)+" • Monthly interest +"+Money(needed/10):"One-time payment • Monthly cashflow unchanged",C("#873d3a"));

@@ -13,11 +13,19 @@ public partial class CashflowGame
         public int version=1,active,turn=1;
         public bool rolled;
         public SavedGame[] players=new SavedGame[2];
+        public Cashflow.Domain.MatchState commands;
     }
     LocalMatch localMatch;
     bool localInitializing;
     Button localEndTurn;
     Text localTurnLabel;
+    Cashflow.Domain.ActionRequest endTurnRequest;
+    void EnsureLocalCommandState()
+    {
+        if(localMatch.commands!=null)return;
+        localMatch.commands=new Cashflow.Domain.MatchState{id=Guid.NewGuid().ToString("N"),active=localMatch.active,turn=localMatch.turn};
+        for(int i=0;i<2;i++)localMatch.commands.players.Add(new Cashflow.Domain.PlayerState{id=Guid.NewGuid().ToString("N")});
+    }
     string localLastPayload;
     string localPathOverride;
     string LocalMatchPath=>localPathOverride??Path.Combine(Application.persistentDataPath,"cashflow-local-match-v1.json");
@@ -53,10 +61,13 @@ public partial class CashflowGame
     }
     void LoadLocalPlayer()
     {
+        EnsureLocalCommandState();
         var s=localMatch.players[localMatch.active];
         ApplyPlayerState(ClonePlayer(s));RestoreDecision(s.pending);MoveToken();
         localTurnLabel=Label(uiRoot,"",17);Place(localTurnLabel.rectTransform,175,325,470,40);
-        localEndTurn=Button(uiRoot,"END TURN",C("#21756a"),EndLocalTurn);localEndTurn.name="Local End Turn";Place(localEndTurn.GetComponent<RectTransform>(),460,-250,230,42);
+        endTurnRequest=new Cashflow.Domain.ActionRequest{id=Guid.NewGuid().ToString("N"),playerId=localMatch.commands.players[localMatch.active].id,expectedRevision=localMatch.commands.revision,kind=Cashflow.Domain.ActionKind.EndTurn};
+        var request=endTurnRequest;
+        localEndTurn=Button(uiRoot,"END TURN",C("#21756a"),()=>EndLocalTurnCommand(request));localEndTurn.name="Local End Turn";Place(localEndTurn.GetComponent<RectTransform>(),460,-250,230,42);
         int other=1-localMatch.active;var opponent=localMatch.players[other];
         var marker=GameObject.CreatePrimitive(PrimitiveType.Sphere);marker.name="Player "+(other+1)+" token";marker.transform.SetParent(world.transform,false);
         marker.transform.position=BoardWorld.TrackPoint(opponent.fastTrack?opponent.fastPosition:opponent.position,opponent.fastTrack)+new Vector3(.12f,.12f,0);
@@ -75,14 +86,24 @@ public partial class CashflowGame
     }
     void EndLocalTurn()
     {
+        EndLocalTurnCommand(endTurnRequest);
+    }
+    void EndLocalTurnCommand(Cashflow.Domain.ActionRequest request)
+    {
         if(localMatch==null||!localMatch.rolled||rolling||modal!=null||gameWon)return;
         localMatch.players[localMatch.active]=ClonePlayer(CaptureGame());
         if(localMatch.players[0].gameOver&&localMatch.players[1].gameOver){ShowEventPanel("MATCH OVER","Both players have been eliminated. Use the menu to leave.",C("#a84036"));return;}
-        int next=1-localMatch.active;
-        if(localMatch.players[next].gameOver)next=localMatch.active;
+        var commands=localMatch.commands;
+        // During the local migration, the existing controller remains the trusted
+        // rules adapter. Import its resolved phase; never expose this to a client API.
+        commands.phase=Cashflow.Domain.TurnPhase.Complete;
+        for(int i=0;i<2;i++)commands.players[i].eliminated=localMatch.players[i].gameOver;
+        var result=Cashflow.Domain.CommandRules.Execute(commands,commands.players[localMatch.active].id,request,null);
+        if(!result.accepted||result.duplicate)return;
+        int next=commands.active;
         var current=localMatch.players[localMatch.active];var target=localMatch.players[next];
         target.smallPile=current.smallPile;target.bigPile=current.bigPile;target.lastSmall=current.lastSmall;target.lastBig=current.lastBig;
-        localMatch.active=next;localMatch.turn++;localMatch.rolled=false;LoadLocalPlayer();SaveCheckpoint();
+        localMatch.active=next;localMatch.turn=commands.turn;localMatch.rolled=false;LoadLocalPlayer();SaveCheckpoint();
     }
     bool SaveLocalMatch(bool moving)
     {
