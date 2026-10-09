@@ -23,9 +23,11 @@ public partial class CashflowGame
 
     bool SellInvestment(OwnedInvestment asset,int price)
     {
-        if(asset==null||price<0||!portfolio.Contains(asset)||cash+price<asset.outstandingBankLoan)return false;
-        cash+=price-asset.outstandingBankLoan;
-        bankLoan-=asset.outstandingBankLoan;
+        if(asset==null||!portfolio.Contains(asset))return false;
+        CashflowRules.Balance balance;
+        try{balance=CashflowEventRules.Sell(cash,bankLoan,price,asset.outstandingBankLoan);}
+        catch(System.ArgumentException){return false;}catch(System.OverflowException){return false;}
+        cash=balance.cash;bankLoan=balance.loan;
         portfolio.Remove(asset);
         passive=0;foreach(var owned in portfolio)passive+=owned.monthlyIncome;
         return true;

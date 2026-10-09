@@ -333,7 +333,7 @@ public partial class CashflowGame : MonoBehaviour
         if(tile=="OPPORTUNITY"){ ShowDealChoice(); return; }
         if(tile=="DOODAD"){ ShowUnexpectedExpense(); return; }
         if(tile=="CHARITY"){ShowCharityChoice();return;}
-        if(tile=="BABY"){ if(children>=3){ShowEventPanel("FAMILY UPDATE","Your family is already at the three-child game limit. Monthly expenses stay the same.",C("#be185d"));return;}children++; Log("New baby: monthly expenses +"+Money(profession.childPay)+"; monthly cashflow -"+Money(profession.childPay)+"."); ShowEventPanel("NEW BABY • MONTHLY CHANGE","Monthly expenses +"+Money(profession.childPay)+"\nNet monthly cashflow -"+Money(profession.childPay)+"\n\nThis repeats each month. No cash is paid now.",C("#be185d")); return; }
+        if(tile=="BABY"){ if(children>=3){ShowEventPanel("FAMILY UPDATE","Your family is already at the three-child game limit. Monthly expenses stay the same.",C("#be185d"));return;}children=CashflowEventRules.AddChild(children); Log("New baby: monthly expenses +"+Money(profession.childPay)+"; monthly cashflow -"+Money(profession.childPay)+"."); ShowEventPanel("NEW BABY • MONTHLY CHANGE","Monthly expenses +"+Money(profession.childPay)+"\nNet monthly cashflow -"+Money(profession.childPay)+"\n\nThis repeats each month. No cash is paid now.",C("#be185d")); return; }
         if(tile=="DOWNSIZED"){ ShowRequiredExpense("DOWNSIZED","Your job is interrupted. Pay one month of expenses, then skip two turns.",Expenses(),2); return; }
         if(tile=="MARKET"){ ShowMarketOffer(); return; }
         if(fastTrack)ResolveFastTrack(tile);

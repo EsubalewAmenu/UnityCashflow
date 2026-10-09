@@ -18,21 +18,7 @@ public partial class CashflowGame
         var pile=big?bigDrawPile:smallDrawPile;
         var pool=big?bigDeals:smallDeals;
         var previous=big?lastBigDeal:lastSmallDeal;
-        if(pile.Count==0)
-        {
-            pile.AddRange(pool);
-            for(int i=pile.Count-1;i>0;i--)
-            {
-                int j=Random.Range(0,i+1);
-                var swap=pile[i];pile[i]=pile[j];pile[j]=swap;
-            }
-            // A fresh shuffle must not immediately repeat the last discarded card.
-            if(pile.Count>1 && previous!=null && pile[pile.Count-1].title==previous.title)
-            {
-                var swap=pile[0];pile[0]=pile[pile.Count-1];pile[pile.Count-1]=swap;
-            }
-        }
-        var deal=pile[pile.Count-1];pile.RemoveAt(pile.Count-1);
+        var deal=CashflowEventRules.Draw(pile,pool,previous,(a,b)=>b!=null&&a.title==b.title,max=>Random.Range(0,max));
         if(big)lastBigDeal=deal;else lastSmallDeal=deal;
         return deal;
     }

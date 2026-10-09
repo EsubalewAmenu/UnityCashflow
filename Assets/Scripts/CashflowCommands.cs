@@ -3,20 +3,30 @@ using System.Collections.Generic;
 
 namespace Cashflow.Domain
 {
-    public enum ActionKind { Roll, Buy, Borrow, Pay, Pass, EndTurn }
+    public enum ActionKind { Roll, Buy, Borrow, Pay, Pass, EndTurn, Donate, Sell, BuyDream, Acknowledge, DrawSmall, DrawBig }
+    public enum DecisionKind { Financial, Charity, Market, Dream, Baby, Loss, DeckChoice }
+    [Serializable] public sealed class InvestmentState
+    {
+        public string id;public int monthlyIncome,linkedLoan;
+        public InvestmentState Copy()=>new InvestmentState{id=id,monthlyIncome=monthlyIncome,linkedLoan=linkedLoan};
+    }
     public enum TurnPhase { AwaitRoll, Moving, Decision, Complete }
     [Serializable] public sealed class PlayerState
     {
         public string id;
         public int cash,bankLoan,passive,position,skipTurns;
-        public bool eliminated;
+        public bool eliminated,bonusDice,fastTrack,won;
+        public int children;
+        public List<InvestmentState> investments=new List<InvestmentState>();
         public List<string> investmentIds=new List<string>();
-        public PlayerState Copy()=>new PlayerState{id=id,cash=cash,bankLoan=bankLoan,passive=passive,position=position,skipTurns=skipTurns,eliminated=eliminated,investmentIds=new List<string>(investmentIds)};
+        public PlayerState Copy()=>new PlayerState{id=id,cash=cash,bankLoan=bankLoan,passive=passive,position=position,skipTurns=skipTurns,eliminated=eliminated,bonusDice=bonusDice,fastTrack=fastTrack,won=won,children=children,investments=investments.ConvertAll(x=>x.Copy()),investmentIds=new List<string>(investmentIds)};
     }
     // Populated by the trusted rules adapter, never accepted from a player's request.
     [Serializable] public sealed class Decision
     {
-        public string id;
+        public string id,assetId;
+        public DecisionKind kind;
+        public int income;
         public bool purchase,required;
         public int cost,monthlyIncome,skipTurns;
     }
@@ -43,6 +53,7 @@ namespace Cashflow.Domain
         public TurnPhase phase;
         public Decision decision;
         public List<PlayerState> players=new List<PlayerState>();
+        public List<Decision> smallDeck=new List<Decision>(),bigDeck=new List<Decision>();
         public List<ActionReceipt> receipts=new List<ActionReceipt>();
     }
     public sealed class ActionResult
@@ -98,7 +109,7 @@ namespace Cashflow.Domain
             if(state.active<0||state.active>=state.players.Count||state.players[state.active].id!=authenticatedPlayer)return Reject("Not your turn");
             if(state.revision==long.MaxValue)return Reject("Revision exhausted");
             var player=state.players[state.active].Copy();
-            var phase=state.phase;int total=state.diceTotal,next=state.active,turn=state.turn;bool finished=false;var decision=state.decision;
+            var phase=state.phase;int total=state.diceTotal,next=state.active,turn=state.turn;bool finished=false;var decision=state.decision;List<Decision> drawnDeck=null;
             if(player.eliminated&&request.kind!=ActionKind.EndTurn)return Reject("Player eliminated");
             try{
                 switch(request.kind){
@@ -106,18 +117,52 @@ namespace Cashflow.Domain
                         if(phase!=TurnPhase.AwaitRoll)return Reject("Already rolled or decision pending");
                         if(player.skipTurns>0){player.skipTurns--;total=0;phase=TurnPhase.Complete;break;}
                         if(dice==null||state.diceCount<1||state.diceCount>2)return Reject("Dice source unavailable");
-                        total=0;for(int i=0;i<state.diceCount;i++){int die=dice.NextDie();if(die<1||die>6)return Reject("Invalid dice outcome");total+=die;}
-                        phase=TurnPhase.Moving;break;
+                        total=0;for(int i=0;i<(player.bonusDice?2:state.diceCount);i++){int die=dice.NextDie();if(die<1||die>6)return Reject("Invalid dice outcome");total+=die;}
+                        player.bonusDice=false;phase=TurnPhase.Moving;break;
                     case ActionKind.Buy:
                     case ActionKind.Pay:
                         if(phase!=TurnPhase.Decision||decision==null||decision.id!=request.decisionId)return Reject("Decision no longer available");
+                        if(decision.kind!=DecisionKind.Financial)return Reject("Wrong decision action");
                         if((request.kind==ActionKind.Buy)!=decision.purchase)return Reject("Wrong decision action");
                         if(decision.cost<0||decision.skipTurns<0)return Reject("Invalid decision terms");
                         int loan=request.borrowShortfall?CashflowRules.RequiredLoan(player.cash,decision.cost):0;
                         var paid=CashflowRules.Purchase(player.cash,player.bankLoan,decision.cost,loan);
                         player.cash=paid.cash;player.bankLoan=paid.loan;
-                        if(decision.purchase){player.passive=checked(player.passive+decision.monthlyIncome);player.investmentIds.Add(state.id+":"+request.id);}
+                        if(decision.purchase){player.passive=checked(player.passive+decision.monthlyIncome);string assetId=state.id+":"+request.id;player.investmentIds.Add(assetId);player.investments.Add(new InvestmentState{id=assetId,monthlyIncome=decision.monthlyIncome,linkedLoan=loan});}
                         else player.skipTurns=decision.skipTurns;
+                        decision=null;phase=TurnPhase.Complete;break;
+                    case ActionKind.DrawSmall:
+                    case ActionKind.DrawBig:
+                        if(phase!=TurnPhase.Decision||decision==null||decision.kind!=DecisionKind.DeckChoice||decision.id!=request.decisionId)return Reject("Not choosing a deal deck");
+                        drawnDeck=request.kind==ActionKind.DrawSmall?state.smallDeck:state.bigDeck;
+                        if(drawnDeck==null||drawnDeck.Count==0)return Reject("Deck requires trusted refill");
+                        var card=drawnDeck[drawnDeck.Count-1];
+                        if(card==null||card.kind!=DecisionKind.Financial||!card.purchase)return Reject("Invalid deal card");
+                        decision=new Decision{id=state.id+":"+request.id,kind=card.kind,purchase=true,cost=card.cost,monthlyIncome=card.monthlyIncome};
+                        break;
+                    case ActionKind.Donate:
+                    case ActionKind.Sell:
+                    case ActionKind.BuyDream:
+                    case ActionKind.Acknowledge:
+                        if(phase!=TurnPhase.Decision||decision==null||decision.id!=request.decisionId)return Reject("Decision no longer available");
+                        if(request.kind==ActionKind.Donate){
+                            if(decision.kind!=DecisionKind.Charity)return Reject("Not a charity decision");
+                            player.cash=CashflowEventRules.Donate(player.cash,decision.income,player.bonusDice);player.bonusDice=true;
+                        }else if(request.kind==ActionKind.Sell){
+                            if(decision.kind!=DecisionKind.Market)return Reject("Not a market decision");
+                            var asset=player.investments.Find(x=>x.id==decision.assetId);
+                            if(asset==null)return Reject("Investment not owned");
+                            var sale=CashflowEventRules.Sell(player.cash,player.bankLoan,decision.cost,asset.linkedLoan);
+                            player.cash=sale.cash;player.bankLoan=sale.loan;player.passive=checked(player.passive-asset.monthlyIncome);
+                            player.investments.Remove(asset);player.investmentIds.Remove(asset.id);
+                        }else if(request.kind==ActionKind.BuyDream){
+                            if(decision.kind!=DecisionKind.Dream)return Reject("Not a dream decision");
+                            player.cash=CashflowEventRules.BuyDream(player.cash,decision.cost,player.fastTrack,player.won);player.won=true;finished=true;
+                        }else{
+                            if(decision.kind==DecisionKind.Baby)player.children=CashflowEventRules.AddChild(player.children);
+                            else if(decision.kind==DecisionKind.Loss)player.cash=CashflowEventRules.Spend(player.cash,decision.cost);
+                            else return Reject("Event requires a different action");
+                        }
                         decision=null;phase=TurnPhase.Complete;break;
                     case ActionKind.Borrow:
                         if(phase==TurnPhase.Moving)return Reject("Movement unresolved");
@@ -134,6 +179,7 @@ namespace Cashflow.Domain
                 }
             }catch(ArgumentException e){return Reject(e.Message);}catch(OverflowException){return Reject("Numeric limit exceeded");}
             // All calculations finish before any state is changed.
+            if(drawnDeck!=null)drawnDeck.RemoveAt(drawnDeck.Count-1);
             state.players[state.active]=player;state.active=next;state.turn=turn;state.finished=finished;
             state.phase=phase;state.decision=decision;state.diceTotal=total;state.revision++;
             var receipt=new ActionReceipt{id=request.id,playerId=authenticatedPlayer,fingerprint=fingerprint,revision=state.revision,diceTotal=total};

@@ -23,7 +23,7 @@ public partial class CashflowGame
             string[] parts=tile.Split('+');int income=int.Parse(parts[1].Replace("K",""))*1000;
             OfferDeal(new Deal(parts[0].Trim(),income*5,income,"This Fast Track business requires an upfront investment. Its income is added to your portfolio and collected on Cashflow Day."),true);return;
         }
-        int loss=tile=="TAX AUDIT"?cash/10:tile=="LAWSUIT"?Mathf.Min(cash,25000):tile=="DIVORCE"?cash/2:cash/5;
+        int loss=CashflowEventRules.FastTrackLoss(tile,cash);
         loss=Mathf.Max(0,loss);cash-=loss;Log(tile+": paid "+Money(loss)+".");
         ShowEventPanel(tile,"One-time payment made: "+Money(loss)+"\n\n"+(tile=="TAX AUDIT"?"An audit costs 10% of available cash.":tile=="LAWSUIT"?"A legal settlement costs up to $25,000 from available cash.":tile=="DIVORCE"?"A settlement divides your available cash in half.":"A market correction costs 20% of available cash.")+"\nInvestments, debts and monthly cashflow are unchanged.",C("#a84036"));
     }
@@ -31,7 +31,7 @@ public partial class CashflowGame
     {
         int cost=dreamGoals[selectedDream];
         if(!fastTrack||gameWon||cash<cost)return false;
-        cash-=cost;gameWon=true;Log("Dream purchased: "+dream+" for "+Money(cost)+".");return true;
+        cash=CashflowEventRules.BuyDream(cash,cost,fastTrack,gameWon);gameWon=true;Log("Dream purchased: "+dream+" for "+Money(cost)+".");return true;
     }
     void ShowDreamPurchase()
     {

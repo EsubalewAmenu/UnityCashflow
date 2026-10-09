@@ -9,7 +9,7 @@ public partial class CashflowGame
     int LoanNeeded(Deal deal){return CashflowRules.RequiredLoan(cash,deal.down);}
     void ShowCharityChoice()
     {
-        int donation=Mathf.Max(100,Income()/10);bool resolved=false;
+        int donation=CashflowEventRules.DonationCost(Income());bool resolved=false;
         var card=CardShell("CHARITY • YOUR CHOICE","Choose how to take part",C("#a56b26"),new Vector2(740,570));
         pendingDecision=new PendingDecision{kind="charity"};
         var copy=Label(card.transform,"Donate "+Money(donation)+" to roll two dice on your next roll.\nOr choose an available ad bonus without spending cash.\nPassing is always free.",21);copy.color=C("#51445b");Place(copy.rectTransform,0,77,660,96);
@@ -17,7 +17,7 @@ public partial class CashflowGame
         var balance=Label(card.transform,"Current cash: "+Money(cash)+(cash<donation?" • Not enough to donate":""),16);balance.color=C("#6a6071");Place(balance.rectTransform,0,-59,650,30);
         var donate=Button(card.transform,"DONATE • 2 DICE",C("#21756a"),()=>
         {
-            if(resolved||cash<donation)return;resolved=true;cash-=donation;charity=true;CloseModal();Refresh();Log("Donated "+Money(donation)+". Next roll: two dice.");
+            if(resolved||cash<donation)return;cash=CashflowEventRules.Donate(cash,Income(),charity);resolved=true;charity=true;CloseModal();Refresh();Log("Donated "+Money(donation)+". Next roll: two dice.");
         });donate.name="Donate Charity";donate.interactable=cash>=donation&&!charity;Place(donate.GetComponent<RectTransform>(),170,-231,310,54);SetButtonText(donate,Color.white,18);
         var pass=Button(card.transform,"PASS",C("#e8dcc5"),()=>{if(resolved)return;resolved=true;CloseModal();Log(charity?"Passed on charity. Your two-dice bonus is still ready.":"Passed on charity. Next roll: one die.");});pass.name="Pass Charity";Place(pass.GetComponent<RectTransform>(),-190,-231,270,54);SetButtonText(pass,C("#51445b"),18);
         ShowCharityAdChoice(card,donate,pass,()=>resolved,()=>resolved=true);
