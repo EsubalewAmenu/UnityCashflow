@@ -56,7 +56,30 @@ using System.Collections.Generic;
                 ScreenCapture.CaptureScreenshot("work/local-match-review/board.png");
                 step++;next=EditorApplication.timeSinceStartup+3;return;
             }
-            Finish(true,"Local multiplayer entry unobstructed on profession and dream pages; menu opens; two-player cash isolation, handoff, separate save/resume, turn guard and shared finance rules passed.");
+            if(step==3){
+                // Exercise the actual saved-state bug: completed turn, reload, then
+                // click the newly created button (not just the controller method).
+                var match=Get("localMatch");match.GetType().GetField("rolled").SetValue(match,true);
+                Check((bool)Call("SaveCheckpoint",false),"Completed turn checkpoint failed");
+                Call("ResumeLocalMatch");Call("UpdateLocalTurn");
+                int prior=(int)Get("localMatch").GetType().GetField("active").GetValue(Get("localMatch"));
+                var button=GameObject.Find("Local End Turn").GetComponent<Button>();
+                Check(button.interactable,"Resumed End Turn is disabled");button.onClick.Invoke();
+                Check((int)Get("localMatch").GetType().GetField("active").GetValue(Get("localMatch"))!=prior,"Resumed End Turn did not switch player");
+                button.onClick.Invoke();
+                Check((int)Get("localMatch").GetType().GetField("active").GetValue(Get("localMatch"))!=prior,"Old button callback switched twice");
+                string fixture=Path.GetFullPath("work/local-match-review/reported-save.json");
+                if(File.Exists(fixture)){
+                    Set("localPathOverride",Path.GetFullPath("work/local-match-review/reported-save-copy.json"));
+                    File.Copy(fixture,(string)typeof(CashflowGame).GetProperty("LocalMatchPath",F).GetValue(G),true);
+                    Call("ResumeLocalMatch");Call("UpdateLocalTurn");
+                    prior=(int)Get("localMatch").GetType().GetField("active").GetValue(Get("localMatch"));
+                    var restored=GameObject.Find("Local End Turn").GetComponent<Button>();Check(restored.interactable,"Reported save button disabled");restored.onClick.Invoke();
+                    Check((int)Get("localMatch").GetType().GetField("active").GetValue(Get("localMatch"))!=prior,"Reported save did not advance");
+                }
+                step++;next=EditorApplication.timeSinceStartup+2;return;
+            }
+            Finish(true,"Opening buttons, player isolation, save/resume, completed-turn resume button, duplicate button callback, reported-save fixture (when present), turn guards and shared finance rules passed.");
         }catch(Exception e){Finish(false,e.ToString());}
     }
     static void Finish(bool pass,string message){active=false;Directory.CreateDirectory("work/local-match-review");File.WriteAllText("work/local-match-review/result.txt",(pass?"PASS: ":"FAIL: ")+message);EditorApplication.Exit(pass?0:1);}

@@ -22,7 +22,7 @@ public partial class CashflowGame
     Cashflow.Domain.ActionRequest endTurnRequest;
     void EnsureLocalCommandState()
     {
-        if(localMatch.commands!=null)return;
+        if(localMatch.commands!=null){Cashflow.Domain.CommandRules.NormalizeRestoredState(localMatch.commands);return;}
         localMatch.commands=new Cashflow.Domain.MatchState{id=Guid.NewGuid().ToString("N"),active=localMatch.active,turn=localMatch.turn};
         for(int i=0;i<2;i++)localMatch.commands.players.Add(new Cashflow.Domain.PlayerState{id=Guid.NewGuid().ToString("N")});
     }
@@ -99,7 +99,8 @@ public partial class CashflowGame
         commands.phase=Cashflow.Domain.TurnPhase.Complete;
         for(int i=0;i<2;i++)commands.players[i].eliminated=localMatch.players[i].gameOver;
         var result=Cashflow.Domain.CommandRules.Execute(commands,commands.players[localMatch.active].id,request,null);
-        if(!result.accepted||result.duplicate)return;
+        if(!result.accepted){Log("Could not end turn: "+result.error);return;}
+        if(result.duplicate)return;
         int next=commands.active;
         var current=localMatch.players[localMatch.active];var target=localMatch.players[next];
         target.smallPile=current.smallPile;target.bigPile=current.bigPile;target.lastSmall=current.lastSmall;target.lastBig=current.lastBig;

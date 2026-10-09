@@ -77,6 +77,13 @@ namespace Cashflow.Domain
     // request handling per match and persist state + receipts in one transaction.
     public static class CommandRules
     {
+        public static void NormalizeRestoredState(MatchState state)
+        {
+            // Unity's inline serializer materializes a null Decision as an empty
+            // object. Only a Decision-phase entry with an ID represents a card.
+            // Never discard a real pending card or reset IDs/revision/receipts.
+            if(state!=null&&state.phase!=TurnPhase.Decision&&state.decision!=null&&string.IsNullOrEmpty(state.decision.id))state.decision=null;
+        }
         // Trusted continuation after Roll. Clients cannot supply payments or cards.
         // Retry after persistence is safe: the match is no longer in Moving phase.
         public static bool ResolveMovement(MatchState state,long revision,IBoardRules rules)
