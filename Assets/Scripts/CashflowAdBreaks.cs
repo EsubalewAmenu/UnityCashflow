@@ -1,3 +1,4 @@
+using Cashflow.Domain;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,7 +16,8 @@ public partial class CashflowGame
         int count=0,previousCash=cash;
         for(int step=1;step<=steps;step++)
             if(fastTrack?fastTiles[(start+step)%24]=="CASHFLOW DAY":ratTiles[(start+step)%24]=="PAYDAY")count++;
-        CollectMovementPaydays(start,steps);
+        if(!SettleMovementCommand(start,steps))return;
+        if(count>0){Log((fastTrack?"CASHFLOW DAY":"PAYDAY")+": cash "+SignedMoney(cash-previousCash)+".");if(world!=null)world.Audio.Payday();}
         if(CheckGameOver())return;
         string destination=fastTrack?fastTiles[fastPosition]:ratTiles[position];
         if(localMatch==null&&count>0&&IsPaydayDestination(destination))ShowPaydayBreak(destination,cash-previousCash,count);
@@ -44,10 +46,11 @@ public partial class CashflowGame
     {
         var card=CardShell("TURN BREAK",title,C("#21756a"),new Vector2(800,500));
         pendingDecision=decision;
+        BindCommandDecision(new Decision{kind=DecisionKind.Notice});var intent=CommandIntent(ActionKind.Acknowledge);
         var copy=Label(card.transform,details,22);copy.color=C("#51445b");Place(copy.rectTransform,0,0,710,235);
         bool accepted=false,finished=false;
         var ok=Button(card.transform,"OK",C("#21756a"),()=>{
-            if(accepted||CashflowAds.Ensure().FullScreen)return;accepted=true;
+            if(accepted||CashflowAds.Ensure().FullScreen||!DispatchGameplay(intent))return;accepted=true;
             prepare();SaveCheckpoint();
             // Keep input blocked while the native fullscreen ad owns the screen.
             if(world!=null)world.InputBlocked=true;if(rollButton!=null)rollButton.interactable=false;

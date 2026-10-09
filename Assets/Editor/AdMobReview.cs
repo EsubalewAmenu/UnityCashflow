@@ -13,6 +13,10 @@ public static class AdMobReview
     static bool running;static int step,oldCash;static double next;static ReviewProvider fake;
     static CashflowGame G=>UnityEngine.Object.FindObjectOfType<CashflowGame>();
     static object Get(string n)=>typeof(CashflowGame).GetField(n,F).GetValue(G);
+    static void CompleteMove(int start,int steps){
+        Call("ImportCommandPlayer");var state=(Cashflow.Domain.MatchState)typeof(CashflowGame).GetProperty("GameplayCommands",F).GetValue(G);
+        state.phase=Cashflow.Domain.TurnPhase.Moving;state.diceTotal=steps;Call("CompleteMovement",start,steps);
+    }
     static void Set(string n,object v)=>typeof(CashflowGame).GetField(n,F).SetValue(G,v);
     static object Call(string n,params object[] a)=>typeof(CashflowGame).GetMethod(n,F).Invoke(G,a);
     static void Check(bool condition,string text){if(!condition)throw new Exception(text);}
@@ -82,12 +86,12 @@ public static class AdMobReview
                     var gameplayRoot=(RectTransform)Get("uiRoot");var topCorners=new Vector3[4];gameplayRoot.GetWorldCorners(topCorners);
                     Check(topCorners[1].y<=Screen.safeArea.yMax-136+1,"Gameplay popup overlaps top banner");
                     Call("CloseModal");Set("cash",10000);Set("bankLoan",0);Set("position",6);
-                    oldCash=(int)Get("cash");Call("CompleteMovement",4,2);
+                    oldCash=(int)Get("cash");CompleteMove(4,2);
                     Check((int)Get("cash")==oldCash+(int)Call("Income")-(int)Call("Expenses"),"Payday settlement wrong");
                     Check(JsonUtility.ToJson(Get("pendingDecision")).Contains("choice")&&!CashflowAds.Instance.FullScreen&&fake.interstitialShows==0,"Passing Payday interrupted destination with an ad break");
                     Call("CloseModal");oldCash=(int)Get("cash");Call("ShowPaydayBreak","OPPORTUNITY",123,1);
                     Check((int)Get("cash")==oldCash&&JsonUtility.ToJson(Get("pendingDecision")).Contains("choice"),"Legacy passing-Payday checkpoint replayed break or payment");
-                    Call("CloseModal");Set("position",5);Call("CompleteMovement",4,1);
+                    Call("CloseModal");Set("position",5);CompleteMove(4,1);
                     Check((int)Get("cash")==oldCash+(int)Call("Income")-(int)Call("Expenses"),"Landing Payday settlement wrong");
                     Check(Get("modal")!=null&&JsonUtility.ToJson(Get("pendingDecision")).Contains("payday-break"),"Salary popup missing");
                     Check((bool)Call("SaveCheckpoint",false),"Payday checkpoint failed");oldCash=(int)Get("cash");
@@ -108,9 +112,9 @@ public static class AdMobReview
                     Check(!CashflowAds.Instance.FullScreen&&Time.timeScale==1&&Get("modal")==null,"Show failure blocked play");
                     CashflowAds.Instance.Settings.interstitialCooldownSeconds=90;
                     Call("CloseModal");Set("fastTrack",true);Set("fastPosition",8);Set("cash",100000);Set("bankLoan",0);
-                    oldCash=(int)Get("cash");Call("CompleteMovement",5,3);
+                    oldCash=(int)Get("cash");CompleteMove(5,3);
                     Check((int)Get("cash")!=oldCash&&!JsonUtility.ToJson(Get("pendingDecision")).Contains("payday-break")&&!CashflowAds.Instance.FullScreen,"Passing Cashflow Day showed a break or missed settlement");
-                    Call("CloseModal");Set("fastPosition",6);Call("CompleteMovement",5,1);
+                    Call("CloseModal");Set("fastPosition",6);CompleteMove(5,1);
                     Check(JsonUtility.ToJson(Get("pendingDecision")).Contains("payday-break"),"Landing Cashflow Day popup missing");
                     Call("CloseModal");Set("saveActive",false);Call("ShowSetup");
                     File.WriteAllText(Root+"results.txt","PASS: reward lifecycle; gameplay top banner and popup safe area at 1280x720, 2532x1170, 2340x1080; Payday settlement and resume without duplicate payment; no-fill continuation; Downsized interstitial exactly once; close/failure recovery; cooldown and audio/time restoration. Deterministic fake ads; mobile SDK delivery needs device verification.\n");

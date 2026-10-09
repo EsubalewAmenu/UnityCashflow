@@ -181,7 +181,7 @@ public sealed class BoardWorld : MonoBehaviour
             Pawn.position=b;
         }
     }
-    public IEnumerator ThrowDice(int count)
+    public IEnumerator ThrowDice(int count,int[] outcomes=null)
     {
         Busy=true;DiceTotal=0;
         Audio.Roll();
@@ -198,7 +198,7 @@ public sealed class BoardWorld : MonoBehaviour
             for(int i=0;i<count;i++)settled &= dice[i].Settled;
             if(settled)break;
         }
-        for(int i=0;i<count;i++){dice[i].Finish();DiceTotal+=dice[i].Value;}
+        for(int i=0;i<count;i++){dice[i].Finish(outcomes==null?0:outcomes[i]);DiceTotal+=dice[i].Value;}
         yield return new WaitForSeconds(ReducedMotion?.1f:.4f);Busy=false;
     }
     void OnDestroy()

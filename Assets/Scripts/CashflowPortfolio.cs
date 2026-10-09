@@ -1,3 +1,4 @@
+using Cashflow.Domain;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -14,32 +15,12 @@ public partial class CashflowGame
 
     [SerializeField] List<OwnedInvestment> portfolio = new List<OwnedInvestment>();
 
+    Decision DealDecision(Deal deal)=>new Decision{kind=DecisionKind.Financial,purchase=true,cost=deal.down,monthlyIncome=deal.flow,title=deal.title,description=deal.description};
     void PurchaseInvestment(Deal deal,int loan)
     {
-        var balance=CashflowRules.Purchase(cash,bankLoan,deal.down,loan);
-        portfolio.Add(new OwnedInvestment {
-            id=Guid.NewGuid().ToString("N"),title=deal.title,description=deal.description,
-            upfrontCost=deal.down,monthlyIncome=deal.flow,
-            originalBankLoan=loan,outstandingBankLoan=loan
-        });
-        cash=balance.cash;
-        bankLoan=balance.loan;
-        passive=0;
-        foreach(var asset in portfolio)passive+=asset.monthlyIncome;
+        BindCommandDecision(DealDecision(deal));DispatchGameplay(CommandIntent(ActionKind.Buy,borrow:loan>0));
     }
-
-    // The existing bank repayment pays the oldest investment loan first.
-    void RepayInvestmentLoan(int amount)
-    {
-        int remaining=amount;
-        foreach(var asset in portfolio)
-        {
-            int payment=Math.Min(remaining,asset.outstandingBankLoan);
-            asset.outstandingBankLoan-=payment;remaining-=payment;
-            if(remaining==0)break;
-        }
-        bankLoan-=amount;cash-=amount;
-    }
+    void RepayInvestmentLoan(int amount){DispatchGameplay(CommandIntent(ActionKind.RepayBank,amount));}
 
     void ShowPortfolio(int page)
     {

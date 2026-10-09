@@ -10,7 +10,7 @@ public partial class CashflowGame
 {
     [Serializable] class PendingDecision
     {
-        public string kind="",title,detail,assetId; public Deal deal;
+        public string kind="",title,detail,assetId,commandId; public Deal deal;
         public bool big; public int amount,turns; public Color color;
     }
     [Serializable] class SavedGame
@@ -25,6 +25,7 @@ public partial class CashflowGame
         public List<HistoryEntry> history;
         public int historyCash,historyFlow,historyDebt;
         public PendingDecision pending;
+        public Cashflow.Domain.MatchState commands;
     }
     [Serializable] class SaveEnvelope { public string payload,checksum; }
     PendingDecision pendingDecision=new PendingDecision();
@@ -43,7 +44,7 @@ public partial class CashflowGame
         profession=profession,selectedDream=selectedDream,cash=cash,children=children,position=position,fastPosition=fastPosition,
         skipTurns=skipTurns,bankLoan=bankLoan,lastRoll=lastRoll,fastTrack=fastTrack,charity=charity,gameWon=gameWon,gameOver=gameOver,fastTrackIntro=fastTrackIntro,
         reducedMotion=world!=null&&world.ReducedMotion,portfolio=portfolio,debts=personalDebts,smallPile=smallDrawPile,bigPile=bigDrawPile,
-        lastSmall=lastSmallDeal,lastBig=lastBigDeal,history=history,historyCash=historyCash,historyFlow=historyFlow,historyDebt=historyDebt,pending=pendingDecision
+        lastSmall=lastSmallDeal,lastBig=lastBigDeal,history=history,historyCash=historyCash,historyFlow=historyFlow,historyDebt=historyDebt,pending=pendingDecision,commands=localMatch==null?soloCommands:null
     };
     bool SaveCheckpoint(bool moving=false)
     {
@@ -119,6 +120,7 @@ public partial class CashflowGame
     }
     void ApplyPlayerState(SavedGame s)
     {
+            if(localMatch==null){soloCommands=s.commands;Cashflow.Domain.CommandRules.NormalizeRestoredState(soloCommands);}
             profession=s.profession;int professionIndex=Array.FindIndex(professions,p=>p.name==profession.name);if(professionIndex>=0)professions[professionIndex]=profession;
             selectedDream=s.selectedDream;dream=dreams[selectedDream];cash=s.cash;children=s.children;position=s.position;fastPosition=s.fastPosition;
             skipTurns=s.skipTurns;bankLoan=s.bankLoan;lastRoll=s.lastRoll;fastTrack=s.fastTrack;charity=s.charity;gameWon=s.gameWon;gameOver=s.gameOver;fastTrackIntro=s.fastTrackIntro;
@@ -129,6 +131,8 @@ public partial class CashflowGame
     }
     void RestoreDecision(PendingDecision p)
     {
+        restoredDecisionId=p.commandId;
+        try{
         if(gameWon){Win();return;}
         if(gameOver){ShowGameOver();return;}
         switch(p.kind){
@@ -146,9 +150,13 @@ public partial class CashflowGame
             case "land-after-break":Land(p.title);break;
             case "downsize-break":ShowDownsizeBreak();break;
         }
+        }finally{restoredDecisionId=null;}
     }
     void FinishSavedMovement(int steps)
     {
+        var commands=GameplayCommands;
+        // Upgrade only an explicitly saved movement checkpoint from older versions.
+        if(commands.phase!=Cashflow.Domain.TurnPhase.Moving){ImportCommandPlayer();commands.phase=Cashflow.Domain.TurnPhase.Moving;commands.diceTotal=steps;}
         int old=fastTrack?fastPosition:position;
         if(fastTrack)fastPosition=(old+steps)%24;else position=(old+steps)%24;
         pendingDecision=new PendingDecision();MoveToken();CompleteMovement(old,steps);

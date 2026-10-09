@@ -1,3 +1,4 @@
+using Cashflow.Domain;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,7 +18,7 @@ public partial class CashflowGame
         var watch=Button(card.transform,"WATCH AD • 2 DICE NEXT ROLL",C("#654174"),()=>{});
         watch.name="Watch Charity Ad";Place(watch.GetComponent<RectTransform>(),0,-157,650,50);SetButtonText(watch,Color.white,18);
         var hint=Label(card.transform,"",15);hint.color=C("#6a6071");Place(hint.rectTransform,0,-111,660,32);
-        bool waiting=false;
+        var rewardIntent=CommandIntent(ActionKind.RewardDice);bool waiting=false;
         var availability=watch.gameObject.AddComponent<CharityAdAvailability>();
         availability.Refresh=()=>{
             bool ready=ads.RewardReady&&!charity&&!isResolved()&&!waiting;
@@ -33,7 +34,7 @@ public partial class CashflowGame
             var group=card.GetComponent<CanvasGroup>();if(group==null)group=card.AddComponent<CanvasGroup>();group.interactable=false;
             bool started=ads.TryReward(()=>{
                 if(this==null||isResolved()||pendingDecision.kind!="charity")return;
-                markResolved();charity=true;pendingDecision=new PendingDecision();
+                if(!DispatchGameplay(rewardIntent,reward:true))return;markResolved();pendingDecision=new PendingDecision();
                 Log("Ad bonus earned. Next roll: two dice. No cash spent.");
                 SaveCheckpoint();
             },()=>{

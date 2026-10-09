@@ -1,3 +1,4 @@
+using Cashflow.Domain;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,14 +13,15 @@ public partial class CashflowGame
         int donation=CashflowEventRules.DonationCost(Income());bool resolved=false;
         var card=CardShell("CHARITY • YOUR CHOICE","Choose how to take part",C("#a56b26"),new Vector2(740,570));
         pendingDecision=new PendingDecision{kind="charity"};
+        BindCommandDecision(new Decision{kind=DecisionKind.Charity,income=Income()});var donateIntent=CommandIntent(ActionKind.Donate);var passIntent=CommandIntent(ActionKind.Pass);
         var copy=Label(card.transform,"Donate "+Money(donation)+" to roll two dice on your next roll.\nOr choose an available ad bonus without spending cash.\nPassing is always free.",21);copy.color=C("#51445b");Place(copy.rectTransform,0,77,660,96);
         var amount=Label(card.transform,"YOUR DONATION  "+Money(donation),29);amount.color=C("#21756a");amount.fontStyle=FontStyle.Bold;Place(amount.rectTransform,0,-10,650,46);
         var balance=Label(card.transform,"Current cash: "+Money(cash)+(cash<donation?" • Not enough to donate":""),16);balance.color=C("#6a6071");Place(balance.rectTransform,0,-59,650,30);
         var donate=Button(card.transform,"DONATE • 2 DICE",C("#21756a"),()=>
         {
-            if(resolved||cash<donation)return;cash=CashflowEventRules.Donate(cash,Income(),charity);resolved=true;charity=true;CloseModal();Refresh();Log("Donated "+Money(donation)+". Next roll: two dice.");
+            if(resolved||!DispatchGameplay(donateIntent))return;resolved=true;CloseModal();Refresh();Log("Donated "+Money(donation)+". Next roll: two dice.");
         });donate.name="Donate Charity";donate.interactable=cash>=donation&&!charity;Place(donate.GetComponent<RectTransform>(),170,-231,310,54);SetButtonText(donate,Color.white,18);
-        var pass=Button(card.transform,"PASS",C("#e8dcc5"),()=>{if(resolved)return;resolved=true;CloseModal();Log(charity?"Passed on charity. Your two-dice bonus is still ready.":"Passed on charity. Next roll: one die.");});pass.name="Pass Charity";Place(pass.GetComponent<RectTransform>(),-190,-231,270,54);SetButtonText(pass,C("#51445b"),18);
+        var pass=Button(card.transform,"PASS",C("#e8dcc5"),()=>{if(resolved||!DispatchGameplay(passIntent))return;resolved=true;CloseModal();Log(charity?"Passed on charity. Your two-dice bonus is still ready.":"Passed on charity. Next roll: one die.");});pass.name="Pass Charity";Place(pass.GetComponent<RectTransform>(),-190,-231,270,54);SetButtonText(pass,C("#51445b"),18);
         ShowCharityAdChoice(card,donate,pass,()=>resolved,()=>resolved=true);
     }
     void ShowLoanOffer(Deal deal,bool big)
@@ -27,6 +29,7 @@ public partial class CashflowGame
         int principal=LoanNeeded(deal),payment=principal/10;bool resolved=false;
         var card=CardShell("BANK LOAN • REVIEW BEFORE BUYING",deal.title,C("#654174"),new Vector2(900,590));
         pendingDecision=new PendingDecision{kind="loan",deal=deal,big=big};
+        BindCommandDecision(DealDecision(deal));var buyIntent=CommandIntent(ActionKind.Buy,borrow:true);var passIntent=CommandIntent(ActionKind.Pass);
         FinanceRow(card.transform,"Deal upfront payment",Money(deal.down),140);
         FinanceRow(card.transform,"Deal monthly income",Money(deal.flow)+" / mo",98);
         FinanceRow(card.transform,"Borrow",Money(principal),56);
@@ -38,10 +41,10 @@ public partial class CashflowGame
         {
             if(resolved)return;resolved=true;
             // Recompute against the current balance, so accepting cannot overdraw cash.
-            int loan=LoanNeeded(deal);PurchaseInvestment(deal,loan);
+            int loan=LoanNeeded(deal);if(!DispatchGameplay(buyIntent))return;
             CloseModal();CheckEscape();Refresh();Log("Borrowed "+Money(loan)+" and bought "+deal.title+". Loan interest: "+Money(LoanPayment())+"/mo.");PurchaseCelebration(deal);
         });accept.name="Confirm Loan";Place(accept.GetComponent<RectTransform>(),190,-245,350,54);SetButtonText(accept,Color.white,18);
-        var pass=Button(card.transform,"PASS ON DEAL",C("#e8dcc5"),()=>{if(resolved)return;resolved=true;CloseModal();Log("Passed on "+deal.title+". No loan taken.");});pass.name="Pass Loan";Place(pass.GetComponent<RectTransform>(),-230,-245,270,54);SetButtonText(pass,C("#51445b"),18);
+        var pass=Button(card.transform,"PASS ON DEAL",C("#e8dcc5"),()=>{if(resolved||!DispatchGameplay(passIntent))return;resolved=true;CloseModal();Log("Passed on "+deal.title+". No loan taken.");});pass.name="Pass Loan";Place(pass.GetComponent<RectTransform>(),-230,-245,270,54);SetButtonText(pass,C("#51445b"),18);
     }
     void ShowStatement()
     {

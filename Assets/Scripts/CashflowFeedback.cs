@@ -1,3 +1,4 @@
+using Cashflow.Domain;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -76,6 +77,7 @@ public partial class CashflowGame
         int loan=Mathf.CeilToInt(Mathf.Max(0,cost-cash)/1000f)*1000;
         var card=CardShell("ONE-TIME BILL • REVIEW",title,C("#a84036"),new Vector2(900,590));
         pendingDecision=new PendingDecision{kind="bill",title=title,detail=reason,amount=cost,turns=turns};
+        BindCommandDecision(new Decision{kind=DecisionKind.Financial,cost=cost,skipTurns=turns,required=true});var intent=CommandIntent(ActionKind.Pay,borrow:true);
         var story=Label(card.transform,reason,22);story.color=C("#51445b");Place(story.rectTransform,0,145,810,70);
         FinanceRow(card.transform,"One-time payment",Money(cost),80);FinanceRow(card.transform,"Available cash",Money(cash),35);
         FinanceRow(card.transform,"Required bank borrowing",Money(loan),-10);FinanceRow(card.transform,"Cash after payment",Money(cash+loan-cost),-55);
@@ -85,7 +87,7 @@ public partial class CashflowGame
         var note=Label(card.transform,noteText,19);note.color=C("#51445b");Place(note.rectTransform,0,-175,810,80);
         bool resolved=false;var pay=Button(card.transform,loan>0?"BORROW & PAY":"PAY EXPENSE",C("#a84036"),()=>{
             if(resolved)return;resolved=true;
-            int needed=CashflowRules.RequiredLoan(cash,cost);var balance=CashflowRules.Purchase(cash,bankLoan,cost,needed);bankLoan=balance.loan;cash=balance.cash;skipTurns=turns;
+            int needed=CashflowRules.RequiredLoan(cash,cost);if(!DispatchGameplay(intent))return;
             CloseModal();Log(title+": paid "+Money(cost)+(needed>0?"; borrowed "+Money(needed):"")+(turns>0?"; skip "+turns+" turns.":"."));Refresh();world.Audio.Expense();
             if(title=="DOWNSIZED"&&!gameOver){ShowDownsizeBreak();SaveCheckpoint();}
             else Receipt(title+" • PAID "+Money(cost),needed>0?"Borrowed "+Money(needed)+" • Monthly interest +"+Money(needed/10):"One-time payment • Monthly cashflow unchanged",C("#873d3a"));

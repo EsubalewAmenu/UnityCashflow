@@ -14,6 +14,10 @@ using System.Collections.Generic;
     const BindingFlags F=BindingFlags.NonPublic|BindingFlags.Instance;
     static CashflowGame G=>UnityEngine.Object.FindObjectOfType<CashflowGame>();
     static object Get(string n)=>typeof(CashflowGame).GetField(n,F).GetValue(G);
+    static void CompleteMove(int start,int steps){
+        Call("ImportCommandPlayer");var state=(Cashflow.Domain.MatchState)typeof(CashflowGame).GetProperty("GameplayCommands",F).GetValue(G);
+        state.phase=Cashflow.Domain.TurnPhase.Moving;state.diceTotal=steps;Call("CompleteMovement",start,steps);
+    }
     static void Set(string n,object v)=>typeof(CashflowGame).GetField(n,F).SetValue(G,v);
     static object Call(string n,params object[] a)=>typeof(CashflowGame).GetMethod(n,F).Invoke(G,a);
     static void Check(bool ok,string message){if(!ok)throw new Exception(message);}
@@ -38,12 +42,12 @@ using System.Collections.Generic;
             if(step==2){
                 CheckOpeningEntry("ShowDreams");
                 Set("localPathOverride",Path.GetFullPath("work/local-match-review/save.json"));
-                Call("StartLocalMatch");Set("cash",12345);
+                Call("StartLocalMatch");Set("cash",0);
                 Call("PurchaseInvestment",new CashflowGame.Deal("Test rental",1000,100),1000);firstCash=(int)Get("cash");
                 var match=Get("localMatch");match.GetType().GetField("rolled").SetValue(match,true);
                 Call("EndLocalTurn");Check((int)Get("cash")!=firstCash,"Player cash leaked across seats");
                 Check((int)Get("bankLoan")==0&&(int)Get("passive")==0,"Investment or debt leaked across seats");
-                Set("cash",6789);match.GetType().GetField("rolled").SetValue(match,true);Call("EndLocalTurn");
+                Set("cash",6789);match.GetType().GetField("rolled").SetValue(match,true);((Cashflow.Domain.MatchState)match.GetType().GetField("commands").GetValue(match)).phase=Cashflow.Domain.TurnPhase.Complete;Call("EndLocalTurn");
                 Check((int)Get("cash")==firstCash,"First player's balance was not restored");
                 Check((int)Get("bankLoan")==1000&&(int)Get("passive")==100,"Investment lost at handoff");
                 Check((bool)Call("SaveCheckpoint",false),"Match save failed");
@@ -51,7 +55,7 @@ using System.Collections.Generic;
                 var activeBefore=Get("localMatch").GetType().GetField("active").GetValue(Get("localMatch"));Call("EndLocalTurn");
                 Check(activeBefore.Equals(Get("localMatch").GetType().GetField("active").GetValue(Get("localMatch"))),"End turn allowed before rolling");
                 Check(CashflowRules.SettlePayday(100,300,50)==350&&CashflowRules.IsBankrupt(-1,-1)&&!CashflowRules.IsBankrupt(-1,0),"Shared financial rules");
-                Set("position",5);int net=(int)Call("Income")-(int)Call("Expenses");Call("CompleteMovement",4,1);
+                Set("position",5);int net=(int)Call("Income")-(int)Call("Expenses");CompleteMove(4,1);
                 Check((int)Get("cash")==firstCash+net&&Get("modal")==null,"Local Payday payment or ad suppression failed");
                 ScreenCapture.CaptureScreenshot("work/local-match-review/board.png");
                 step++;next=EditorApplication.timeSinceStartup+3;return;

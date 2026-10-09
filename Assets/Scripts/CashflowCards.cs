@@ -1,3 +1,4 @@
+using Cashflow.Domain;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -22,17 +23,18 @@ public partial class CashflowGame
     {
         var card=CardShell("OPPORTUNITY","Choose your deal",C("#a56b26"),new Vector2(800,480));
         pendingDecision=new PendingDecision{kind="choice"};
+        BindCommandDecision(new Decision{kind=DecisionKind.DeckChoice});
         var hint=Label(card.transform,"Pick a deck. Review the opportunity, then buy or pass.",17);hint.color=C("#6a6071");Place(hint.rectTransform,0,105,720,30);
         DealDeck(card.transform,false,-185);DealDeck(card.transform,true,185);
     }
     void DealDeck(Transform parent,bool big,float x)
     {
         Color accent=C(big?"#654174":"#21756a");
-        bool chosen=false;
+        bool chosen=false;var drawIntent=CommandIntent(big?ActionKind.DrawBig:ActionKind.DrawSmall);
         var button=Button(parent,"",accent,()=>
         {
             if(chosen)return;chosen=true;
-            OfferDeal(DrawDeal(big),big);
+            var deal=DrawDealCommand(big,drawIntent);if(deal!=null)OfferDeal(deal,big);
         });
         button.gameObject.name=big?"Choose Big Deal":"Choose Small Deal";
         Place(button.GetComponent<RectTransform>(),x,-60,340,278);
@@ -53,6 +55,7 @@ public partial class CashflowGame
         Color accent=C(big?"#654174":"#21756a");
         var card=CardShell(big?"BIG DEAL • OPPORTUNITY":"SMALL DEAL • OPPORTUNITY",deal.title,accent,new Vector2(900,590),true);
         pendingDecision=new PendingDecision{kind="deal",deal=deal,big=big};
+        BindCommandDecision(DealDecision(deal));var buyIntent=CommandIntent(ActionKind.Buy);var passIntent=CommandIntent(ActionKind.Pass);
         AddDecisionReview(card);
         AddDealExplanation(card,deal);
         var story=Label(card.transform,string.IsNullOrWhiteSpace(deal.description)?"Review the upfront payment and monthly income before deciding whether this investment fits your budget.":deal.description,19,TextAnchor.MiddleLeft);
@@ -73,9 +76,9 @@ public partial class CashflowGame
         {
             if(resolved)return;resolved=true;
             if(cash<deal.down){ShowLoanOffer(deal,big);return;}
-            PurchaseInvestment(deal,0);CloseModal();Log("Bought "+deal.title+". Passive income +"+Money(deal.flow));CheckEscape();Refresh();PurchaseCelebration(deal);
+            if(!DispatchGameplay(buyIntent))return;CloseModal();Log("Bought "+deal.title+". Passive income +"+Money(deal.flow));CheckEscape();Refresh();PurchaseCelebration(deal);
         });buy.gameObject.name="Buy Deal";buy.interactable=true;Place(buy.GetComponent<RectTransform>(),190,-245,350,54);SetButtonText(buy,Color.white,18);
-        var pass=Button(card.transform,"PASS",C("#e8dcc5"),()=>{if(resolved)return;resolved=true;CloseModal();Log("Passed on "+deal.title);});pass.gameObject.name="Pass Deal";Place(pass.GetComponent<RectTransform>(),-230,-245,270,54);SetButtonText(pass,C("#51445b"),18);
+        var pass=Button(card.transform,"PASS",C("#e8dcc5"),()=>{if(resolved||!DispatchGameplay(passIntent))return;resolved=true;CloseModal();Log("Passed on "+deal.title);});pass.gameObject.name="Pass Deal";Place(pass.GetComponent<RectTransform>(),-230,-245,270,54);SetButtonText(pass,C("#51445b"),18);
     }
     void PurchaseCelebration(Deal deal)
     {

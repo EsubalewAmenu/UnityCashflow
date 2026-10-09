@@ -1,3 +1,4 @@
+using Cashflow.Domain;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -23,6 +24,20 @@ public partial class CashflowGame
         return deal;
     }
 
+    Deal DrawDealCommand(bool big,ActionRequest intent)
+    {
+        var state=GameplayCommands;
+        if(intent.expectedRevision!=state.revision||state.decision==null||intent.decisionId!=state.decision.id)return null;
+        var pile=big?bigDrawPile:smallDrawPile;
+        // Refill through the trusted local shuffler, then let the command consume it.
+        if(pile.Count==0){var first=DrawDeal(big);pile.Add(first);}
+        var deck=big?state.bigDeck:state.smallDeck;deck.Clear();foreach(var card in pile)deck.Add(DealDecision(card));
+        var selected=pile[pile.Count-1];
+        if(!DispatchGameplay(intent))return null;
+        pile.RemoveAt(pile.Count-1);if(big)lastBigDeal=selected;else lastSmallDeal=selected;
+        restoredDecisionId=state.decision.id;
+        return selected;
+    }
     string DealPriceRange(bool big)
     {
         var pool=big?bigDeals:smallDeals;

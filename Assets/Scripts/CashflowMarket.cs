@@ -1,3 +1,4 @@
+using Cashflow.Domain;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,13 +25,8 @@ public partial class CashflowGame
     bool SellInvestment(OwnedInvestment asset,int price)
     {
         if(asset==null||!portfolio.Contains(asset))return false;
-        CashflowRules.Balance balance;
-        try{balance=CashflowEventRules.Sell(cash,bankLoan,price,asset.outstandingBankLoan);}
-        catch(System.ArgumentException){return false;}catch(System.OverflowException){return false;}
-        cash=balance.cash;bankLoan=balance.loan;
-        portfolio.Remove(asset);
-        passive=0;foreach(var owned in portfolio)passive+=owned.monthlyIncome;
-        return true;
+        BindCommandDecision(new Decision{kind=DecisionKind.Market,assetId=asset.id,cost=price});
+        return DispatchGameplay(CommandIntent(ActionKind.Sell));
     }
 
     void ReviewMarketSale(OwnedInvestment asset,int price,string context)
@@ -38,6 +34,7 @@ public partial class CashflowGame
         int debt=asset.outstandingBankLoan,net=price-debt;
         var card=CardShell("THE MARKET • BUYER OFFER",asset.title,C("#21756a"),new Vector2(900,590),true);
         pendingDecision=new PendingDecision{kind="market",assetId=asset.id,amount=price,detail=context};
+        BindCommandDecision(new Decision{kind=DecisionKind.Market,assetId=asset.id,cost=price});var sellIntent=CommandIntent(ActionKind.Sell);var passIntent=CommandIntent(ActionKind.Pass);
         AddDecisionReview(card);
         var story=Label(card.transform,context+" You can sell this investment or keep collecting its income.",19,TextAnchor.MiddleLeft);
         story.color=C("#51445b");Place(story.rectTransform,0,135,810,70);
@@ -52,12 +49,12 @@ public partial class CashflowGame
         note.color=C(affordable?"#6a6071":"#a84036");Place(note.rectTransform,0,-188,810,55);
         var sell=Button(card.transform,"ACCEPT & SELL",C("#21756a"),()=>{
             if(resolved)return;
-            if(!SellInvestment(asset,price))return;
+            if(!DispatchGameplay(sellIntent))return;
             resolved=true;CloseModal();CheckEscape();Refresh();
             Log("Sold "+asset.title+" for "+Money(price)+". Loan repaid: "+Money(debt)+".");
             ShowEventPanel("INVESTMENT SOLD",asset.title+"\nBuyer paid: "+Money(price)+"\nBank loan repaid: "+Money(debt)+"\nCash change: "+Money(net)+"\nMonthly investment income removed: "+Money(asset.monthlyIncome),C("#21756a"));
         });sell.name="Accept Market Sale";sell.interactable=affordable;Place(sell.GetComponent<RectTransform>(),200,-250,350,52);SetButtonText(sell,Color.white,18);
-        var pass=Button(card.transform,"PASS • KEEP INVESTMENT",C("#e8dcc5"),()=>{if(resolved)return;resolved=true;CloseModal();Log("Passed on the offer for "+asset.title+". Investment retained.");});
+        var pass=Button(card.transform,"PASS • KEEP INVESTMENT",C("#e8dcc5"),()=>{if(resolved||!DispatchGameplay(passIntent))return;resolved=true;CloseModal();Log("Passed on the offer for "+asset.title+". Investment retained.");});
         pass.name="Pass Market Sale";Place(pass.GetComponent<RectTransform>(),-210,-250,370,52);SetButtonText(pass,C("#51445b"),16);
     }
 }

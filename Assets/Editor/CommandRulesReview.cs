@@ -98,6 +98,28 @@ public static class CommandRulesReview
             for(int n=0;n<3;n++)seen.Add(CashflowEventRules.Draw(pile,pool,null,(a,b)=>a==b,max=>max-1));
             Check(seen.Count==3&&pile.Count==0,"Deck repeated within cycle");
             Check(CashflowEventRules.Draw(pile,pool,"c",(a,b)=>a==b,max=>max-1)!="c","Reshuffle immediately repeated last card");
+            s=Match();s.players[0].cash=5000;s.players[0].bankLoan=2000;
+            s.players[0].investments.Add(new InvestmentState{id="rental",linkedLoan=2000});
+            var repay=Request(s,ActionKind.RepayBank,"repay-bank");repay.amount=1000;
+            Check(CommandRules.Execute(s,"one",repay,dice).accepted&&s.players[0].cash==4000&&s.players[0].investments[0].linkedLoan==1000,"Bank repayment allocation");
+            Check(CommandRules.Execute(s,"one",repay,dice).duplicate&&s.players[0].bankLoan==1000,"Duplicate bank repayment");
+            s.players[0].debts.Add(new DebtState{id="car",balance=500,payment=50});
+            var debtPay=Request(s,ActionKind.RepayDebt,"repay-car");debtPay.assetId="car";debtPay.amount=500;
+            Check(CommandRules.Execute(s,"one",debtPay,dice).accepted&&s.players[0].cash==3500&&s.players[0].debts[0].balance==0,"Personal debt repayment");
+            Check(CommandRules.Execute(s,"one",debtPay,dice).duplicate,"Duplicate personal debt repayment");
+            s=Match();s.phase=TurnPhase.Decision;s.decision=new Decision{id="charity",kind=DecisionKind.Charity};
+            var reward=Request(s,ActionKind.RewardDice,"reward");
+            Check(!CommandRules.Execute(s,"one",reward,dice).accepted&&!s.players[0].bonusDice,"Unverified reward granted");
+            Check(CommandRules.Execute(s,"one",reward,dice,true).accepted&&s.players[0].bonusDice&&s.players[0].cash==100,"Reward spent money or did not grant dice");
+            Check(CommandRules.Execute(s,"one",reward,dice,true).duplicate,"Reward retry");
+            s=Match();s.players[0].passive=500;s.players[0].baseExpenses=500;
+            Check(!CommandRules.Execute(s,"one",Request(s,ActionKind.EnterFastTrack,"escape-equal"),dice).accepted,"Escape at equal income");
+            s.players[0].passive=501;
+            Check(CommandRules.Execute(s,"one",Request(s,ActionKind.EnterFastTrack,"escape"),dice).accepted&&s.players[0].fastTrack,"Escape unavailable");
+            s=Match();s.phase=TurnPhase.Decision;s.decision=new Decision{id="notice",kind=DecisionKind.Notice,resumeAwaitRoll=true};
+            Check(CommandRules.Execute(s,"one",Request(s,ActionKind.Acknowledge,"notice"),dice).accepted&&s.phase==TurnPhase.AwaitRoll,"Pre-roll notice consumed turn");
+            s=Match();
+            Check(!CommandRules.Execute(s,"one",Request(s,ActionKind.CollectPayday,"untrusted-payday"),dice).accepted,"Untrusted payday accepted");
             File.WriteAllText(dir+"/result.txt","PASS: "+checks+" checks: identity, turn ownership, stale revisions, retries, restore, dice, movement, Payday, purchase, borrowing, bills, overflow and eliminated players.");
             EditorApplication.Exit(0);
         }catch(Exception e){File.WriteAllText(dir+"/result.txt","FAIL: "+e);EditorApplication.Exit(1);}

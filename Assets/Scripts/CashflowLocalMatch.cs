@@ -63,6 +63,9 @@ public partial class CashflowGame
     {
         EnsureLocalCommandState();
         var s=localMatch.players[localMatch.active];
+        // Older local saves tracked completed rolls outside the command phase.
+        if(localMatch.rolled&&string.IsNullOrEmpty(s.pending.kind)&&localMatch.commands.phase==Cashflow.Domain.TurnPhase.AwaitRoll)
+            localMatch.commands.phase=Cashflow.Domain.TurnPhase.Complete;
         ApplyPlayerState(ClonePlayer(s));RestoreDecision(s.pending);MoveToken();
         localTurnLabel=Label(uiRoot,"",17);Place(localTurnLabel.rectTransform,175,325,470,40);
         endTurnRequest=new Cashflow.Domain.ActionRequest{id=Guid.NewGuid().ToString("N"),playerId=localMatch.commands.players[localMatch.active].id,expectedRevision=localMatch.commands.revision,kind=Cashflow.Domain.ActionKind.EndTurn};
@@ -81,6 +84,10 @@ public partial class CashflowGame
     {
         if(localMatch==null||localInitializing)return;
         if(localTurnLabel!=null)localTurnLabel.text="PLAYER "+(localMatch.active+1)+"  •  TURN "+localMatch.turn;
+        if(localEndTurn!=null&&endTurnRequest.expectedRevision!=localMatch.commands.revision){
+            endTurnRequest=new Cashflow.Domain.ActionRequest{id=Guid.NewGuid().ToString("N"),playerId=localMatch.commands.players[localMatch.active].id,expectedRevision=localMatch.commands.revision,kind=Cashflow.Domain.ActionKind.EndTurn};
+            var request=endTurnRequest;localEndTurn.onClick.RemoveAllListeners();localEndTurn.onClick.AddListener(()=>EndLocalTurnCommand(request));
+        }
         if(localEndTurn!=null)localEndTurn.interactable=localMatch.rolled&&!rolling&&modal==null&&!gameWon;
         if(rollButton!=null&&localMatch.rolled)rollButton.interactable=false;
     }
@@ -94,9 +101,6 @@ public partial class CashflowGame
         localMatch.players[localMatch.active]=ClonePlayer(CaptureGame());
         if(localMatch.players[0].gameOver&&localMatch.players[1].gameOver){ShowEventPanel("MATCH OVER","Both players have been eliminated. Use the menu to leave.",C("#a84036"));return;}
         var commands=localMatch.commands;
-        // During the local migration, the existing controller remains the trusted
-        // rules adapter. Import its resolved phase; never expose this to a client API.
-        commands.phase=Cashflow.Domain.TurnPhase.Complete;
         for(int i=0;i<2;i++)commands.players[i].eliminated=localMatch.players[i].gameOver;
         var result=Cashflow.Domain.CommandRules.Execute(commands,commands.players[localMatch.active].id,request,null);
         if(!result.accepted){Log("Could not end turn: "+result.error);return;}

@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>The uppermost physical face supplies the gameplay value.</summary>
+/// <summary>Animates a die and displays the recorded command outcome.</summary>
 public sealed class BoardDie : MonoBehaviour
 {
     Rigidbody body;
@@ -50,12 +50,13 @@ public sealed class BoardDie : MonoBehaviour
         body.isKinematic=false;transform.position=position;transform.rotation=Random.rotationUniform;
         body.velocity=new Vector3(Random.Range(-.3f,.3f),reduced?0:1.6f,Random.Range(-.2f,.2f));body.angularVelocity=Random.onUnitSphere*(reduced?2:14);body.WakeUp();
     }
-    public void Finish()
+    public void Finish(int outcome=0)
     {
         int face=0;float max=-1;
         for(int i=0;i<normals.Length;i++){float dot=Vector3.Dot(transform.TransformDirection(normals[i]),Vector3.up);if(dot>max){max=dot;face=i;}}
+        if(outcome>=1&&outcome<=6)face=outcome-1;
         Value=face+1;body.velocity=Vector3.zero;body.angularVelocity=Vector3.zero;body.isKinematic=true;
-        // Resolve an exceptionally cocked die to the same visible upper face.
+        // Align the recorded outcome (or the physical face in standalone previews).
         transform.rotation=Quaternion.FromToRotation(transform.TransformDirection(normals[face]),Vector3.up)*transform.rotation;
         transform.position=new Vector3(Mathf.Clamp(transform.position.x,-1.4f,1.4f),.36f,Mathf.Clamp(transform.position.z,-.7f,.5f));
     }
