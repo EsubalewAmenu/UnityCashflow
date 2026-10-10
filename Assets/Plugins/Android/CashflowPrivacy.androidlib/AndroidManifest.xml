@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.herma.cashflowprivacy">
+  <application>
+    <!-- Auth brings Analytics transitively; this multiplayer integration does not enable telemetry. -->
+    <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
+  </application>
+</manifest>

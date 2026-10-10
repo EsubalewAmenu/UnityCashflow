@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "332567624526",
+    "project_id": "cashflow-kingdom-9ff53",
+    "storage_bucket": "cashflow-kingdom-9ff53.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:332567624526:android:038cd663f55f6fba627c1f",
+        "android_client_info": {
+          "package_name": "com.herma.Cashflowgame"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAG1c9HTF0KLqA4NsU2qxVyT8LDOpFVoK8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

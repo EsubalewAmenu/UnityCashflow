@@ -9,6 +9,11 @@
     "com.unity.modules.jsonserialize": "1.0.0",
     "com.unity.modules.physics": "1.0.0",
     "com.unity.modules.physics2d": "1.0.0",
-    "com.unity.modules.ui": "1.0.0"
+    "com.unity.modules.ui": "1.0.0",
+    "com.google.firebase.app": "file:FirebaseArchives/com.google.firebase.app-13.17.0.tgz",
+    "com.google.firebase.auth": "file:FirebaseArchives/com.google.firebase.auth-13.17.0.tgz",
+    "com.google.firebase.firestore": "file:FirebaseArchives/com.google.firebase.firestore-13.17.0.tgz",
+    "com.google.firebase.functions": "file:FirebaseArchives/com.google.firebase.functions-13.17.0.tgz",
+    "com.google.firebase.app-check": "file:FirebaseArchives/com.google.firebase.app-check-13.17.0.tgz"
   }
 }

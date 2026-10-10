@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Clients may observe only a room in which they already have a seat.
+    // Cloud Functions authenticate membership and publish this sanitized view.
+    match /rooms/{roomId} {
+      allow get: if request.auth != null
+                 && request.auth.uid in resource.data.memberIds;
+      allow list, create, update, delete: if false;
+    }
+    // Authoritative matches, shuffled decks, invites and command receipts are
+    // private. The Admin SDK in trusted functions is the only writer/reader.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

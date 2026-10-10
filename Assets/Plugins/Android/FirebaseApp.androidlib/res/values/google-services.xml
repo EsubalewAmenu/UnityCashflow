@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@string/gcm_defaultSenderId,@string/google_storage_bucket,@string/project_id,@string/google_api_key,@string/google_crash_reporting_api_key,@string/google_app_id">
+  <string name="gcm_defaultSenderId" translatable="false">332567624526</string>
+  <string name="google_storage_bucket" translatable="false">cashflow-kingdom-9ff53.firebasestorage.app</string>
+  <string name="project_id" translatable="false">cashflow-kingdom-9ff53</string>
+  <string name="google_api_key" translatable="false">AIzaSyAG1c9HTF0KLqA4NsU2qxVyT8LDOpFVoK8</string>
+  <string name="google_crash_reporting_api_key" translatable="false">AIzaSyAG1c9HTF0KLqA4NsU2qxVyT8LDOpFVoK8</string>
+  <string name="google_app_id" translatable="false">1:332567624526:android:038cd663f55f6fba627c1f</string>
+</resources>

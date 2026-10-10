@@ -37,3 +37,8 @@ outputs/3d/*
 
 # Local Android SDK downloads and device builds
 work/*
+# Firebase local tooling and emulator data
+Firebase/functions/node_modules/
+Firebase/.firebase/
+Firebase/*debug.log
+Firebase/emulator-data/
