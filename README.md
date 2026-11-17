@@ -1,6 +1,6 @@
 # Cashflow Unity
 
-Unity 2D rebuild of the existing JavaScript Cashflow game. Open this folder from Unity Hub using **Add > Add project from disk**, then open any empty scene and press Play.
+Unity 2D rebuild of the existing Android Cashflow game (https://play.google.com/store/apps/details?id=com.herma.Cashflowgame&pli=1). Open this folder from Unity Hub using **Add > Add project from disk**, then open any empty scene and press Play.
 
 The game builds its UI in code and includes:
 
